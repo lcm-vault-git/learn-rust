@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Learn Rust - 대화형 튜토리얼</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #fafafa; color: #212121;
+    min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+    padding: 40px 20px;
+  }
+  h1 { font-size: 1.8rem; color: #1565c0; margin-bottom: 8px; }
+  .subtitle { color: #757575; font-size: 0.95rem; margin-bottom: 32px; }
+  .card-list { width: 100%; max-width: 500px; display: flex; flex-direction: column; gap: 12px; }
+  a.card {
+    display: block; padding: 18px 22px;
+    background: #fff; border: 1px solid #e0e0e0; border-left: 4px solid #1565c0;
+    border-radius: 10px; text-decoration: none; color: inherit;
+    transition: all 0.2s;
+  }
+  a.card:hover { background: #e3f2fd; border-left-color: #0d47a1; transform: translateX(4px); }
+  .card-title { font-size: 1.05rem; font-weight: 600; color: #1565c0; }
+  .card-desc { font-size: 0.85rem; color: #757575; margin-top: 4px; }
+  .badge {
+    display: inline-block; font-size: 0.7rem; padding: 2px 8px;
+    background: #e8f5e9; color: #2e7d32; border-radius: 10px;
+    font-weight: 600; margin-top: 6px;
+  }
+</style>
+</head>
+<body>
+  <h1>Learn Rust</h1>
+  <p class="subtitle">대화형 단계별 튜토리얼</p>
+  <div class="card-list">
+    <a class="card" href="tutorial/interactive/ch02_variables.html">
+      <div class="card-title">Ch02: 변수와 타입</div>
+      <div class="card-desc">불변 기본, mut, 타입 추론, 섀도잉, const, 튜플/배열</div>
+      <span class="badge">6개 섹션</span>
+    </a>
+    <a class="card" href="tutorial/interactive/ch03_functions.html">
+      <div class="card-title">Ch03: 함수</div>
+      <div class="card-desc">fn, 매개변수 타입, 세미콜론, 표현식 vs 구문</div>
+      <span class="badge">4개 섹션</span>
+    </a>
+    <a class="card" href="tutorial/interactive/ch04_control_flow.html">
+      <div class="card-title">Ch04: 제어 흐름</div>
+      <div class="card-desc">if 표현식, loop/while/for, 빌림 규칙 맛보기, C++/Java/Rust 비교</div>
+      <span class="badge">6개 섹션</span>
+    </a>
+  </div>
+</body>
+</html>
