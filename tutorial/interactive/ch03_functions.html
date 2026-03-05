@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ch03: 함수 — 대화형 튜토리얼</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --teacher-bg: #e3f2fd;
+    --student-bg: #e8f5e9;
+    --keypoint-bg: #fff8e1;
+    --keypoint-border: #ffb300;
+    --quiz-bg: #f3e5f5;
+    --primary: #1565c0;
+    --success: #2e7d32;
+    --danger: #c62828;
+    --text: #212121;
+    --text-light: #757575;
+    --bg: #fafafa;
+    --header-h: 56px;
+    --footer-h: 64px;
+  }
+
+  body {
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--primary);
+    color: #fff;
+    height: var(--header-h);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  header h1 { font-size: 1.1rem; font-weight: 600; flex: 1; white-space: nowrap; }
+  .reset-btn {
+    background: none; border: 1px solid rgba(255,255,255,0.5); color: rgba(255,255,255,0.85);
+    padding: 3px 10px; border-radius: 4px; font-size: 0.72rem; cursor: pointer;
+    font-family: inherit; margin-right: 12px; transition: all 0.2s;
+  }
+  .reset-btn:hover { background: rgba(255,255,255,0.15); border-color: #fff; color: #fff; }
+  .progress-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.85rem;
+  }
+  .progress-bar {
+    width: 120px;
+    height: 6px;
+    background: rgba(255,255,255,0.3);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: #fff;
+    border-radius: 3px;
+    transition: width 0.4s ease;
+  }
+
+  main {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 16px;
+    padding-bottom: calc(var(--footer-h) + 20px);
+  }
+  .chat-container {
+    max-width: 760px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .bubble {
+    max-width: 85%;
+    padding: 14px 18px;
+    border-radius: 18px;
+    font-size: 0.95rem;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: slideUp 0.35s ease forwards;
+    position: relative;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+  }
+  @keyframes slideUp {
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .bubble.teacher {
+    align-self: flex-start;
+    background: var(--teacher-bg);
+    border-bottom-left-radius: 4px;
+  }
+  .bubble.student {
+    align-self: flex-end;
+    background: var(--student-bg);
+    border-bottom-right-radius: 4px;
+  }
+  .bubble .role {
+    font-size: 0.75rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+    color: var(--text-light);
+  }
+  .bubble.teacher .role { color: var(--primary); }
+  .bubble.student .role { color: var(--success); }
+  .bubble p { margin: 6px 0; }
+  .bubble p:first-of-type { margin-top: 0; }
+  .bubble strong { font-weight: 600; }
+  .bubble code {
+    background: rgba(0,0,0,0.07);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 0.88em;
+    font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace;
+  }
+  .bubble pre {
+    margin: 10px -8px;
+    border-radius: 8px;
+    overflow-x: auto;
+  }
+  .bubble pre code {
+    background: none;
+    padding: 14px 16px;
+    display: block;
+    font-size: 0.85em;
+    line-height: 1.5;
+  }
+
+  .keypoint {
+    max-width: 85%;
+    align-self: center;
+    background: var(--keypoint-bg);
+    border-left: 4px solid var(--keypoint-border);
+    border-radius: 8px;
+    padding: 14px 18px;
+    font-size: 0.9rem;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: slideUp 0.35s ease forwards;
+  }
+  .keypoint-title {
+    font-weight: 700;
+    color: #e65100;
+    margin-bottom: 6px;
+    font-size: 0.85rem;
+  }
+  .keypoint ul { padding-left: 18px; margin: 4px 0; }
+  .keypoint li { margin: 3px 0; }
+  .keypoint code {
+    background: rgba(0,0,0,0.06);
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace;
+    font-size: 0.88em;
+  }
+
+  .quiz-card {
+    max-width: 85%;
+    align-self: center;
+    background: var(--quiz-bg);
+    border-radius: 16px;
+    padding: 20px 22px;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: slideUp 0.35s ease forwards;
+  }
+  .quiz-card h3 {
+    font-size: 0.95rem;
+    margin-bottom: 14px;
+    color: #6a1b9a;
+  }
+  .quiz-option {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 10px 14px;
+    margin: 6px 0;
+    border: 2px solid #ce93d8;
+    border-radius: 10px;
+    background: #fff;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-family: inherit;
+    transition: all 0.2s;
+  }
+  .quiz-option:hover:not(:disabled) {
+    background: #f3e5f5;
+    border-color: #ab47bc;
+  }
+  .quiz-option:disabled { cursor: default; }
+  .quiz-option.correct {
+    background: #c8e6c9;
+    border-color: var(--success);
+    color: var(--success);
+    font-weight: 600;
+  }
+  .quiz-option.wrong {
+    background: #ffcdd2;
+    border-color: var(--danger);
+    color: var(--danger);
+  }
+  .quiz-option code {
+    font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace;
+    font-size: 0.88em;
+  }
+  .quiz-feedback {
+    margin-top: 12px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 0.88rem;
+    display: none;
+  }
+  .quiz-feedback.show { display: block; }
+  .quiz-feedback.correct { background: #c8e6c9; color: #1b5e20; }
+  .quiz-feedback.wrong { background: #ffcdd2; color: #b71c1c; }
+
+  .section-divider {
+    text-align: center;
+    padding: 20px 0 10px;
+    opacity: 0;
+    animation: slideUp 0.35s ease forwards;
+  }
+  .section-divider span {
+    display: inline-block;
+    background: var(--primary);
+    color: #fff;
+    padding: 6px 18px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
+  .completion {
+    text-align: center;
+    padding: 40px 20px;
+    opacity: 0;
+    animation: slideUp 0.5s ease forwards;
+  }
+  .completion h2 { font-size: 1.5rem; margin-bottom: 12px; color: var(--primary); }
+  .completion p { color: var(--text-light); margin: 6px 0; }
+  .completion .summary-table {
+    margin: 20px auto;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+  }
+  .completion .summary-table th,
+  .completion .summary-table td {
+    padding: 8px 16px;
+    border: 1px solid #e0e0e0;
+    text-align: left;
+  }
+  .completion .summary-table th { background: var(--primary); color: #fff; }
+  .completion .summary-table code {
+    font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace;
+    font-size: 0.88em;
+  }
+  .restart-btn {
+    margin-top: 20px;
+    padding: 10px 28px;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .restart-btn:hover { background: #0d47a1; }
+
+  footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: var(--footer-h);
+    background: #fff;
+    border-top: 1px solid #e0e0e0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 0 20px;
+    z-index: 100;
+  }
+  .nav-btn {
+    padding: 10px 32px;
+    border: none;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s;
+  }
+  .nav-btn:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+  .btn-prev {
+    background: #e0e0e0;
+    color: var(--text);
+  }
+  .btn-prev:hover:not(:disabled) { background: #bdbdbd; }
+  .btn-next {
+    background: var(--primary);
+    color: #fff;
+  }
+  .btn-next:hover:not(:disabled) { background: #0d47a1; }
+  .step-indicator {
+    font-size: 0.8rem;
+    color: var(--text-light);
+    min-width: 60px;
+    text-align: center;
+  }
+
+  @media (max-width: 600px) {
+    header h1 { font-size: 0.95rem; }
+    .progress-bar { width: 80px; }
+    .bubble, .keypoint, .quiz-card { max-width: 92%; font-size: 0.9rem; }
+    .nav-btn { padding: 10px 24px; font-size: 0.9rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Ch03: 함수</h1>
+  <button class="reset-btn" id="btnReset" title="처음부터 다시 시작">초기화</button>
+  <div class="progress-wrapper">
+    <span id="progressLabel">1 / 4</span>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+  </div>
+</header>
+
+<main id="mainArea">
+  <div class="chat-container" id="chat"></div>
+</main>
+
+<footer>
+  <button class="nav-btn btn-prev" id="btnPrev" disabled>이전</button>
+  <span class="step-indicator" id="stepIndicator"></span>
+  <button class="nav-btn btn-next" id="btnNext">다음</button>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/rust.min.js"></script>
+<script>
+const SECTIONS = [
+  {
+    title: "1. 함수 기본 — fn = function",
+    steps: [
+      { type: "teacher", html: `<p>Rust에서 함수는 <code>fn</code>으로 만들어요. <strong>fn = function의 줄임말.</strong></p>
+<pre><code class="language-rust">fn say_hello() {
+    println!("안녕!");
+}
+
+fn main() {
+    say_hello();
+}</code></pre>` },
+      { type: "teacher", html: `<p>근데 Rust가 다른 점이 하나 있어요. <strong>매개변수에 반드시 타입을 써야 해요:</strong></p>
+<pre><code class="language-rust">fn add(a: i32, b: i32) -> i32 {
+    a + b
+}</code></pre>
+<ul>
+<li><code>a: i32, b: i32</code> — 매개변수는 타입 생략 불가</li>
+<li><code>-> i32</code> — 반환 타입</li>
+<li><code>a + b</code> — 세미콜론이 없으면 <strong>이게 반환값</strong></li>
+</ul>` },
+      { type: "teacher", html: `<p><strong>왜 매개변수는 타입 추론 안 해주나?</strong></p>
+<p>함수는 다른 코드에서 호출되잖아요. 타입이 명시되어 있어야 "이 함수가 뭘 받고 뭘 주는지" 한눈에 보이니까요. 일종의 <strong>계약서</strong>예요.</p>` },
+      { type: "keypoint", html: `<ul>
+<li><code>fn 이름(매개변수: 타입) -> 반환타입 { }</code></li>
+<li>매개변수 타입은 생략 불가 (함수 = 계약서)</li>
+<li>마지막 줄에 세미콜론 없으면 그게 반환값</li>
+</ul>` }
+    ],
+    quiz: {
+      question: "다음 중 올바른 Rust 함수 선언은?",
+      options: [
+        "<code>fn add(a, b) -> i32 { a + b }</code>",
+        "<code>fn add(a: i32, b: i32) -> i32 { a + b }</code>",
+        "<code>function add(a: i32, b: i32) -> i32 { a + b }</code>",
+        "<code>fn add(a: i32, b: i32) { return a + b }</code>"
+      ],
+      answer: 1,
+      explanation: "Rust 함수는 <code>fn</code> 키워드를 쓰고, 매개변수에 타입을 반드시 명시하며, 반환 타입을 <code>-> 타입</code>으로 지정합니다. 마지막 표현식이 반환값이에요."
+    }
+  },
+  {
+    title: "2. 세미콜론의 비밀 — 표현식 vs 구문",
+    steps: [
+      { type: "student", html: `<p>세미콜론을 붙이면 리턴되나?</p>` },
+      { type: "teacher", html: `<p><strong>반대예요!</strong></p>
+<ul>
+<li><code>a + b</code> (세미콜론 없음) → <strong>값을 반환함</strong></li>
+<li><code>a + b;</code> (세미콜론 있음) → <strong>반환 안 함, 컴파일 에러!</strong></li>
+</ul>
+<pre><code class="language-rust">fn add(a: i32, b: i32) -> i32 {
+    a + b      // 세미콜론 없음 → 반환됨
+}
+
+fn add2(a: i32, b: i32) -> i32 {
+    a + b;     // 세미콜론 있음 → 에러!
+}</code></pre>
+<p><code>return</code>을 써도 되지만, Rust 관례는 마지막 줄에서 세미콜론 빼고 반환. <code>return</code>은 함수 중간에서 일찍 빠져나올 때만 써요.</p>` },
+      { type: "student", html: `<p>표현식하고 구문이라는게 정의가 어떻게 되는거지?</p>` },
+      { type: "teacher", html: `<p>쉽게 말하면:</p>
+<ul>
+<li><strong>표현식(expression)</strong> = <strong>값을 만들어내는 것</strong></li>
+<li><strong>구문(statement)</strong> = <strong>실행만 하고 값은 없는 것</strong></li>
+</ul>
+<pre><code class="language-rust">// 표현식 — 값이 나옴
+5 + 3          // → 8
+add(1, 2)      // → 함수 반환값
+
+// 구문 — 값 없이 실행만
+let x = 5;     // 변수 선언은 구문</code></pre>` },
+      { type: "teacher", html: `<p>그래서 Rust에서 이런 것도 가능해요:</p>
+<pre><code class="language-rust">let y = if true { 5 } else { 10 };
+// if가 표현식이라 값을 변수에 넣을 수 있음!</code></pre>
+<p><strong>세미콜론의 역할</strong>: 표현식 뒤에 <code>;</code>를 붙이면 → "이 값 버려" → 구문이 됨.</p>` },
+      { type: "keypoint", html: `<ul>
+<li>표현식 = 값을 만듦, 구문 = 실행만 함</li>
+<li>세미콜론 = "이 값 버려"</li>
+<li>Rust는 표현식 중심 언어 (<code>if</code>도 표현식!)</li>
+</ul>` }
+    ],
+    quiz: {
+      question: "다음 중 컴파일이 되는 코드는?",
+      options: [
+        "<code>fn f() -> i32 { 5; }</code>",
+        "<code>fn f() -> i32 { return 5; }</code>",
+        "<code>fn f() -> i32 { let x = 5; }</code>",
+        "<code>fn f() -> i32 { 5 + 3; }</code>"
+      ],
+      answer: 1,
+      explanation: "<code>return 5;</code>는 명시적 반환이라 OK입니다. 나머지는 세미콜론이 값을 버려서 <code>-> i32</code> 반환 타입과 맞지 않아 에러가 나요."
+    }
+  },
+  {
+    title: "3. 설계 철학과의 연결",
+    steps: [
+      { type: "student", html: `<p>설계 철학과도 관련이 있을까?</p>` },
+      { type: "teacher", html: `<p>직접적으로 관련 있어요. Rust는 <strong>expression-oriented language</strong>(표현식 중심 언어)예요.</p>
+<pre><code class="language-rust">// C++ 스타일 — 초기화 안 된 상태가 존재
+let msg;
+if score > 90 { msg = "A"; } else { msg = "B"; }
+
+// Rust 스타일 — 선언과 동시에 확정
+let msg = if score > 90 { "A" } else { "B" };</code></pre>` },
+      { type: "teacher", html: `<p><strong>"불변이 기본"</strong>이랑 연결됨: 변수 선언할 때 바로 값이 확정 → <code>mut</code> 불필요, 초기화 실수 불가능.</p>
+<p>결국 같은 철학: <strong>"컴파일 타임에 실수를 잡자"</strong> → 불변 기본, 표현식 중심, 타입 명시. 다 연결됩니다.</p>` },
+      { type: "student", html: `<p>그럼 값을 반환하는게 표현식이고 Rust는 가능하면 표현식으로 사용하고 세미콜론을 찍는다라고 이해하면 될까?</p>` },
+      { type: "teacher", html: `<p>거의 맞는데 세미콜론이 반대!</p>
+<ul>
+<li>값을 <strong>쓰고 싶으면</strong> → 세미콜론 <strong>안</strong> 찍음</li>
+<li>그냥 <strong>실행만 하고 싶으면</strong> → 세미콜론 찍음</li>
+</ul>` },
+      { type: "student", html: `<p>근데 if 문은 표현식인데 찍잖아 Rust에서.</p>` },
+      { type: "teacher", html: `<p>날카로운 지적! 그건 <code>if</code> 표현식에 붙은 게 아니라 <strong><code>let</code> 구문에 붙은 거예요.</strong></p>
+<pre><code class="language-rust">let msg = (여기가 표현식);
+//                        ^ 이 세미콜론은 let 구문의 끝</code></pre>
+<p><strong>세미콜론은 항상 "문장의 끝"에 찍는 거고, 표현식 자체에 찍는 게 아닙니다.</strong></p>` }
+    ],
+    quiz: {
+      question: "다음 코드에서 세미콜론은 어디에 붙은 것인가?<br><code>let msg = if x > 0 { \"양수\" } else { \"음수\" };</code>",
+      options: [
+        "<code>if</code> 표현식의 끝",
+        "<code>else</code> 블록의 끝",
+        "<code>let</code> 구문의 끝",
+        "문자열 리터럴의 끝"
+      ],
+      answer: 2,
+      explanation: "세미콜론은 <code>let</code> 구문 전체의 끝에 붙은 것이에요. <code>if</code>는 표현식이므로 값을 만들어 <code>let</code>에 전달하고, <code>let</code> 구문이 세미콜론으로 끝나는 거죠."
+    }
+  },
+  {
+    title: "4. Ch03 총정리",
+    steps: [
+      { type: "teacher", html: `<p>Ch03에서 배운 내용을 정리해볼게요!</p>
+<p><strong>Rust 설계 철학</strong>: 표현식 중심 → 선언과 동시에 값 확정 → 불변 기본과 자연스럽게 연결</p>` },
+      { type: "keypoint", html: `<table style="width:100%; border-collapse:collapse; font-size:0.88rem;">
+<tr style="background:#e65100;color:#fff;"><th style="padding:8px;text-align:left;">개념</th><th style="padding:8px;text-align:left;">한 줄 요약</th></tr>
+<tr style="border-bottom:1px solid #ddd;"><td style="padding:8px;"><code>fn</code></td><td style="padding:8px;">function 줄임말, 함수 선언</td></tr>
+<tr style="border-bottom:1px solid #ddd;"><td style="padding:8px;">매개변수 타입</td><td style="padding:8px;">반드시 명시 (함수 = 계약서)</td></tr>
+<tr style="border-bottom:1px solid #ddd;"><td style="padding:8px;"><code>-> 타입</code></td><td style="padding:8px;">반환 타입</td></tr>
+<tr style="border-bottom:1px solid #ddd;"><td style="padding:8px;">세미콜론 없음</td><td style="padding:8px;">값을 반환 (표현식)</td></tr>
+<tr style="border-bottom:1px solid #ddd;"><td style="padding:8px;">세미콜론 있음</td><td style="padding:8px;">값을 버림 (구문으로 변환)</td></tr>
+<tr style="border-bottom:1px solid #ddd;"><td style="padding:8px;"><code>return</code></td><td style="padding:8px;">중간 탈출용에만 사용 (관례)</td></tr>
+<tr><td style="padding:8px;">표현식 중심</td><td style="padding:8px;">if도 값을 만듦, 변수에 바로 대입 가능</td></tr>
+</table>` }
+    ],
+    quiz: {
+      question: "Rust에서 <code>return</code>은 주로 언제 쓰나요?",
+      options: [
+        "모든 함수의 마지막 줄에 항상 써야 한다",
+        "함수 중간에서 일찍 빠져나올 때만 사용 (관례)",
+        "반환 타입이 있을 때만 사용한다",
+        "세미콜론 대신 사용한다"
+      ],
+      answer: 1,
+      explanation: "Rust 관례는 마지막 줄에서 세미콜론 없이 표현식으로 반환하는 것이에요. <code>return</code>은 함수 중간에서 조기 탈출할 때만 씁니다."
+    }
+  }
+];
+
+// ─── State ──────────────────────────────────────────────────────────────────
+
+const STORAGE_KEY = "ch03_progress";
+let state = loadState();
+
+function loadState() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) return JSON.parse(saved);
+  } catch {}
+  return { sectionIdx: 0, stepIdx: -1, quizPassed: [] };
+}
+
+function saveState() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {}
+}
+
+// ─── DOM ────────────────────────────────────────────────────────────────────
+
+const chat = document.getElementById("chat");
+const btnPrev = document.getElementById("btnPrev");
+const btnNext = document.getElementById("btnNext");
+const progressFill = document.getElementById("progressFill");
+const progressLabel = document.getElementById("progressLabel");
+const stepIndicator = document.getElementById("stepIndicator");
+const mainArea = document.getElementById("mainArea");
+
+// ─── Render helpers ─────────────────────────────────────────────────────────
+
+function renderBubble(step) {
+  const div = document.createElement("div");
+  if (step.type === "teacher" || step.type === "student") {
+    div.className = `bubble ${step.type}`;
+    const roleLabel = step.type === "teacher" ? "선생님" : "학생";
+    div.innerHTML = `<div class="role">${roleLabel}</div>${step.html}`;
+  } else if (step.type === "keypoint") {
+    div.className = "keypoint";
+    div.innerHTML = `<div class="keypoint-title">핵심 정리</div>${step.html}`;
+  }
+  return div;
+}
+
+function renderSectionDivider(title) {
+  const div = document.createElement("div");
+  div.className = "section-divider";
+  div.innerHTML = `<span>${title}</span>`;
+  return div;
+}
+
+function renderQuiz(quiz, sectionIdx) {
+  const div = document.createElement("div");
+  div.className = "quiz-card";
+  let optHtml = quiz.options.map((o, i) =>
+    `<button class="quiz-option" data-idx="${i}">${o}</button>`
+  ).join("");
+  div.innerHTML = `<h3>퀴즈</h3><p style="margin-bottom:12px;">${quiz.question}</p>${optHtml}<div class="quiz-feedback" id="qf-${sectionIdx}"></div>`;
+  return div;
+}
+
+function renderCompletion() {
+  const div = document.createElement("div");
+  div.className = "completion";
+  div.innerHTML = `<h2>학습 완료!</h2>
+<p>Ch03 함수 튜토리얼을 모두 마쳤습니다.</p>
+<table class="summary-table">
+<tr><th>개념</th><th>한 줄 요약</th></tr>
+<tr><td><code>fn</code></td><td>function 줄임말</td></tr>
+<tr><td>매개변수 타입</td><td>반드시 명시</td></tr>
+<tr><td>세미콜론 없음</td><td>값을 반환</td></tr>
+<tr><td>세미콜론 있음</td><td>값을 버림</td></tr>
+<tr><td>표현식 중심</td><td>if도 값을 만듦</td></tr>
+</table>
+<button class="restart-btn" onclick="restart()">처음부터 다시</button>`;
+  return div;
+}
+
+// ─── Core logic ─────────────────────────────────────────────────────────────
+
+function isQuizStep() {
+  return state.stepIdx >= SECTIONS[state.sectionIdx].steps.length;
+}
+
+function isCompleted() {
+  return state.sectionIdx >= SECTIONS.length;
+}
+
+function quizLocked() {
+  return isQuizStep() && !state.quizPassed.includes(state.sectionIdx);
+}
+
+function rebuildChat() {
+  chat.innerHTML = "";
+
+  for (let s = 0; s < state.sectionIdx; s++) {
+    chat.appendChild(renderSectionDivider(SECTIONS[s].title));
+    SECTIONS[s].steps.forEach(step => {
+      const el = renderBubble(step);
+      el.style.animation = "none";
+      el.style.opacity = "1";
+      el.style.transform = "none";
+      chat.appendChild(el);
+    });
+    const note = document.createElement("div");
+    note.className = "keypoint";
+    note.style.animation = "none";
+    note.style.opacity = "1";
+    note.style.transform = "none";
+    note.innerHTML = `<div class="keypoint-title">퀴즈 통과!</div><p>${SECTIONS[s].quiz.explanation}</p>`;
+    chat.appendChild(note);
+  }
+
+  if (isCompleted()) {
+    chat.appendChild(renderCompletion());
+    updateUI();
+    scrollToBottom();
+    return;
+  }
+
+  const sec = SECTIONS[state.sectionIdx];
+  chat.appendChild(renderSectionDivider(sec.title));
+  const showCount = Math.min(state.stepIdx + 1, sec.steps.length);
+  for (let i = 0; i < showCount; i++) {
+    const el = renderBubble(sec.steps[i]);
+    if (i < showCount - 1) {
+      el.style.animation = "none";
+      el.style.opacity = "1";
+      el.style.transform = "none";
+    }
+    chat.appendChild(el);
+  }
+
+  if (isQuizStep()) {
+    const qEl = renderQuiz(sec.quiz, state.sectionIdx);
+    chat.appendChild(qEl);
+    if (state.quizPassed.includes(state.sectionIdx)) {
+      markQuizPassed(qEl, sec.quiz);
+    } else {
+      bindQuiz(qEl, sec.quiz, state.sectionIdx);
+    }
+  }
+
+  chat.querySelectorAll("pre code").forEach(el => hljs.highlightElement(el));
+  updateUI();
+  scrollToBottom();
+}
+
+function bindQuiz(container, quiz, secIdx) {
+  const btns = container.querySelectorAll(".quiz-option");
+  const feedback = container.querySelector(".quiz-feedback");
+  btns.forEach(btn => {
+    btn.addEventListener("click", () => {
+      const idx = parseInt(btn.dataset.idx);
+      if (idx === quiz.answer) {
+        btn.classList.add("correct");
+        feedback.className = "quiz-feedback show correct";
+        feedback.innerHTML = "정답! " + quiz.explanation;
+        btns.forEach(b => b.disabled = true);
+        if (!state.quizPassed.includes(secIdx)) {
+          state.quizPassed.push(secIdx);
+          saveState();
+        }
+        updateUI();
+      } else {
+        btn.classList.add("wrong");
+        btn.disabled = true;
+        feedback.className = "quiz-feedback show wrong";
+        feedback.textContent = "틀렸어요. 다시 골라보세요!";
+      }
+    });
+  });
+}
+
+function markQuizPassed(container, quiz) {
+  const btns = container.querySelectorAll(".quiz-option");
+  const feedback = container.querySelector(".quiz-feedback");
+  btns.forEach(btn => {
+    const idx = parseInt(btn.dataset.idx);
+    if (idx === quiz.answer) btn.classList.add("correct");
+    btn.disabled = true;
+  });
+  feedback.className = "quiz-feedback show correct";
+  feedback.innerHTML = "정답! " + quiz.explanation;
+}
+
+function next() {
+  if (isCompleted()) return;
+  if (quizLocked()) return;
+
+  const sec = SECTIONS[state.sectionIdx];
+  const maxStep = sec.steps.length;
+
+  if (state.stepIdx < maxStep) {
+    state.stepIdx++;
+    saveState();
+    rebuildChat();
+  } else if (state.quizPassed.includes(state.sectionIdx)) {
+    state.sectionIdx++;
+    state.stepIdx = -1;
+    saveState();
+    if (isCompleted()) {
+      rebuildChat();
+    } else {
+      next();
+    }
+  }
+}
+
+function prev() {
+  if (state.stepIdx > 0) {
+    state.stepIdx--;
+    saveState();
+    rebuildChat();
+  } else if (state.sectionIdx > 0) {
+    state.sectionIdx--;
+    state.stepIdx = SECTIONS[state.sectionIdx].steps.length;
+    saveState();
+    rebuildChat();
+  }
+}
+
+function restart() {
+  state = { sectionIdx: 0, stepIdx: -1, quizPassed: [] };
+  saveState();
+  next();
+}
+
+function updateUI() {
+  const completed = isCompleted();
+  const totalSections = SECTIONS.length;
+  const pct = completed ? 100 : (state.sectionIdx / totalSections) * 100;
+  progressFill.style.width = pct + "%";
+  progressLabel.textContent = completed
+    ? "완료!"
+    : `${state.sectionIdx + 1} / ${totalSections}`;
+
+  btnPrev.disabled = (state.sectionIdx === 0 && state.stepIdx <= 0);
+
+  if (completed) {
+    btnNext.disabled = true;
+    stepIndicator.textContent = "";
+  } else if (quizLocked()) {
+    btnNext.disabled = true;
+    stepIndicator.textContent = "퀴즈를 풀어주세요";
+  } else {
+    btnNext.disabled = false;
+    const sec = SECTIONS[state.sectionIdx];
+    const total = sec.steps.length + 1;
+    const cur = Math.min(state.stepIdx + 1, total);
+    stepIndicator.textContent = `${cur} / ${total}`;
+  }
+}
+
+function scrollToBottom() {
+  requestAnimationFrame(() => {
+    mainArea.scrollTop = mainArea.scrollHeight;
+  });
+}
+
+btnNext.addEventListener("click", next);
+btnPrev.addEventListener("click", prev);
+document.getElementById("btnReset").addEventListener("click", () => {
+  if (confirm("진행 상태를 초기화하고 처음부터 시작할까요?")) restart();
+});
+document.addEventListener("keydown", e => {
+  if (e.key === "Enter" && !e.ctrlKey && !e.altKey && !e.shiftKey) {
+    if (document.activeElement?.classList.contains("quiz-option")) return;
+    next();
+  }
+  if (e.key === "ArrowRight") next();
+  if (e.key === "ArrowLeft") prev();
+});
+
+if (state.stepIdx === -1 && state.sectionIdx === 0) {
+  next();
+} else {
+  rebuildChat();
+}
+</script>
+</body>
+</html>

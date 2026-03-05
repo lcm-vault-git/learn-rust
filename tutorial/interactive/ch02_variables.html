@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ch02: 변수와 타입 — 대화형 튜토리얼</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --teacher-bg: #e3f2fd;
+    --student-bg: #e8f5e9;
+    --keypoint-bg: #fff8e1;
+    --keypoint-border: #ffb300;
+    --quiz-bg: #f3e5f5;
+    --primary: #1565c0;
+    --success: #2e7d32;
+    --danger: #c62828;
+    --text: #212121;
+    --text-light: #757575;
+    --bg: #fafafa;
+    --header-h: 56px;
+    --footer-h: 64px;
+  }
+
+  body {
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  /* Header */
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--primary);
+    color: #fff;
+    height: var(--header-h);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  header h1 { font-size: 1.1rem; font-weight: 600; flex: 1; white-space: nowrap; }
+  .reset-btn {
+    background: none; border: 1px solid rgba(255,255,255,0.5); color: rgba(255,255,255,0.85);
+    padding: 3px 10px; border-radius: 4px; font-size: 0.72rem; cursor: pointer;
+    font-family: inherit; margin-right: 12px; transition: all 0.2s;
+  }
+  .reset-btn:hover { background: rgba(255,255,255,0.15); border-color: #fff; color: #fff; }
+  .progress-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.85rem;
+  }
+  .progress-bar {
+    width: 120px;
+    height: 6px;
+    background: rgba(255,255,255,0.3);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: #fff;
+    border-radius: 3px;
+    transition: width 0.4s ease;
+  }
+
+  /* Main chat area */
+  main {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 16px;
+    padding-bottom: calc(var(--footer-h) + 20px);
+  }
+  .chat-container {
+    max-width: 760px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  /* Bubbles */
+  .bubble {
+    max-width: 85%;
+    padding: 14px 18px;
+    border-radius: 18px;
+    font-size: 0.95rem;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: slideUp 0.35s ease forwards;
+    position: relative;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+  }
+  @keyframes slideUp {
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .bubble.teacher {
+    align-self: flex-start;
+    background: var(--teacher-bg);
+    border-bottom-left-radius: 4px;
+  }
+  .bubble.student {
+    align-self: flex-end;
+    background: var(--student-bg);
+    border-bottom-right-radius: 4px;
+  }
+  .bubble .role {
+    font-size: 0.75rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+    color: var(--text-light);
+  }
+  .bubble.teacher .role { color: var(--primary); }
+  .bubble.student .role { color: var(--success); }
+
+  .bubble p { margin: 6px 0; }
+  .bubble p:first-of-type { margin-top: 0; }
+  .bubble strong { font-weight: 600; }
+  .bubble code {
+    background: rgba(0,0,0,0.07);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 0.88em;
+    font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace;
+  }
+
+  /* Code blocks inside bubbles */
+  .bubble pre {
+    margin: 10px -8px;
+    border-radius: 8px;
+    overflow-x: auto;
+  }
+  .bubble pre code {
+    background: none;
+    padding: 14px 16px;
+    display: block;
+    font-size: 0.85em;
+    line-height: 1.5;
+  }
+
+  /* Keypoint card */
+  .keypoint {
+    max-width: 85%;
+    align-self: center;
+    background: var(--keypoint-bg);
+    border-left: 4px solid var(--keypoint-border);
+    border-radius: 8px;
+    padding: 14px 18px;
+    font-size: 0.9rem;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: slideUp 0.35s ease forwards;
+  }
+  .keypoint-title {
+    font-weight: 700;
+    color: #e65100;
+    margin-bottom: 6px;
+    font-size: 0.85rem;
+  }
+  .keypoint ul { padding-left: 18px; margin: 4px 0; }
+  .keypoint li { margin: 3px 0; }
+  .keypoint code {
+    background: rgba(0,0,0,0.06);
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace;
+    font-size: 0.88em;
+  }
+
+  /* Quiz */
+  .quiz-card {
+    max-width: 85%;
+    align-self: center;
+    background: var(--quiz-bg);
+    border-radius: 16px;
+    padding: 20px 22px;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: slideUp 0.35s ease forwards;
+  }
+  .quiz-card h3 {
+    font-size: 0.95rem;
+    margin-bottom: 14px;
+    color: #6a1b9a;
+  }
+  .quiz-option {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 10px 14px;
+    margin: 6px 0;
+    border: 2px solid #ce93d8;
+    border-radius: 10px;
+    background: #fff;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-family: inherit;
+    transition: all 0.2s;
+  }
+  .quiz-option:hover:not(:disabled) {
+    background: #f3e5f5;
+    border-color: #ab47bc;
+  }
+  .quiz-option:disabled { cursor: default; }
+  .quiz-option.correct {
+    background: #c8e6c9;
+    border-color: var(--success);
+    color: var(--success);
+    font-weight: 600;
+  }
+  .quiz-option.wrong {
+    background: #ffcdd2;
+    border-color: var(--danger);
+    color: var(--danger);
+  }
+  .quiz-option code {
+    font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace;
+    font-size: 0.88em;
+  }
+  .quiz-feedback {
+    margin-top: 12px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 0.88rem;
+    display: none;
+  }
+  .quiz-feedback.show { display: block; }
+  .quiz-feedback.correct { background: #c8e6c9; color: #1b5e20; }
+  .quiz-feedback.wrong { background: #ffcdd2; color: #b71c1c; }
+
+  /* Section divider */
+  .section-divider {
+    text-align: center;
+    padding: 20px 0 10px;
+    opacity: 0;
+    animation: slideUp 0.35s ease forwards;
+  }
+  .section-divider span {
+    display: inline-block;
+    background: var(--primary);
+    color: #fff;
+    padding: 6px 18px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
+  /* Completion screen */
+  .completion {
+    text-align: center;
+    padding: 40px 20px;
+    opacity: 0;
+    animation: slideUp 0.5s ease forwards;
+  }
+  .completion h2 { font-size: 1.5rem; margin-bottom: 12px; color: var(--primary); }
+  .completion p { color: var(--text-light); margin: 6px 0; }
+  .completion .summary-table {
+    margin: 20px auto;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+  }
+  .completion .summary-table th,
+  .completion .summary-table td {
+    padding: 8px 16px;
+    border: 1px solid #e0e0e0;
+    text-align: left;
+  }
+  .completion .summary-table th { background: var(--primary); color: #fff; }
+  .completion .summary-table code {
+    font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace;
+    font-size: 0.88em;
+  }
+  .restart-btn {
+    margin-top: 20px;
+    padding: 10px 28px;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .restart-btn:hover { background: #0d47a1; }
+
+  /* Footer nav */
+  footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: var(--footer-h);
+    background: #fff;
+    border-top: 1px solid #e0e0e0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 0 20px;
+    z-index: 100;
+  }
+  .nav-btn {
+    padding: 10px 32px;
+    border: none;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s;
+  }
+  .nav-btn:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+  .btn-prev {
+    background: #e0e0e0;
+    color: var(--text);
+  }
+  .btn-prev:hover:not(:disabled) { background: #bdbdbd; }
+  .btn-next {
+    background: var(--primary);
+    color: #fff;
+  }
+  .btn-next:hover:not(:disabled) { background: #0d47a1; }
+  .step-indicator {
+    font-size: 0.8rem;
+    color: var(--text-light);
+    min-width: 60px;
+    text-align: center;
+  }
+
+  /* Mobile */
+  @media (max-width: 600px) {
+    header h1 { font-size: 0.95rem; }
+    .progress-bar { width: 80px; }
+    .bubble, .keypoint, .quiz-card { max-width: 92%; font-size: 0.9rem; }
+    .nav-btn { padding: 10px 24px; font-size: 0.9rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Ch02: 변수와 타입</h1>
+  <button class="reset-btn" id="btnReset" title="처음부터 다시 시작">초기화</button>
+  <div class="progress-wrapper">
+    <span id="progressLabel">1 / 6</span>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+  </div>
+</header>
+
+<main id="mainArea">
+  <div class="chat-container" id="chat"></div>
+</main>
+
+<footer>
+  <button class="nav-btn btn-prev" id="btnPrev" disabled>이전</button>
+  <span class="step-indicator" id="stepIndicator"></span>
+  <button class="nav-btn btn-next" id="btnNext">다음</button>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/rust.min.js"></script>
+<script>
+// ─── Content Data ───────────────────────────────────────────────────────────
+
+const SECTIONS = [
+  {
+    title: "1. 변수는 기본이 불변",
+    steps: [
+      { type: "teacher", html: `<p>Rust에서 변수를 만들면 <strong>기본적으로 값을 못 바꿔요.</strong></p>
+<pre><code class="language-rust">let x = 5;
+x = 10;  // 컴파일 에러!</code></pre>
+<p>C++에서는 <code>int x = 5; x = 10;</code> 이게 당연한데, Rust는 막아요.</p>` },
+      { type: "teacher", html: `<p><strong>왜?</strong> → 값이 중간에 바뀌면 버그 추적이 어렵거든요. 특히 멀티스레드에서.</p>
+<p>그래서 "바꿀 거면 명시적으로 말해" 라는 철학이에요.</p>
+<pre><code class="language-rust">let mut x = 5;  // "나 이거 바꿀 거야" 선언
+x = 10;          // OK</code></pre>` },
+      { type: "student", html: `<p>오 이런 스토리텔링 좋은 것 같아. 일단 멀티스레드에서 쓰려고 만든건가 그럼?</p>` },
+      { type: "teacher", html: `<p>멀티스레드 <strong>때문에</strong> 만든 건 아니고, Rust의 전체 철학이 <strong>"실수를 컴파일 타임에 잡자"</strong>예요.</p>
+<p>그중 하나가 불변 기본값인 거고, 이게 멀티스레드에서도 자연스럽게 안전해지는 부수 효과가 있는 거예요.</p>
+<p>지금 단계에서는 깊이 안 들어가도 됩니다. <strong>"Rust는 기본이 못 바꿈, 바꾸려면 mut"</strong> 이것만 가져가면 돼요.</p>` },
+      { type: "keypoint", html: `<ul>
+<li>Rust 철학 = "실수를 컴파일 타임에 잡자"</li>
+<li>변수는 기본 <strong>불변</strong>, 바꾸려면 <code>mut</code> 명시</li>
+</ul>` }
+    ],
+    quiz: {
+      question: "다음 중 컴파일 에러가 나는 코드는?",
+      options: [
+        "<code>let mut x = 5; x = 10;</code>",
+        "<code>let x = 5; let y = x + 1;</code>",
+        "<code>let x = 5; x = 10;</code>",
+        "<code>let x = 5; println!(\"{}\", x);</code>"
+      ],
+      answer: 2,
+      explanation: "<code>let x = 5;</code>는 불변 변수이므로 <code>x = 10;</code>으로 값을 바꾸면 컴파일 에러가 납니다. <code>mut</code>을 써야 해요!"
+    }
+  },
+  {
+    title: "2. 타입은 대부분 안 써도 된다",
+    steps: [
+      { type: "teacher", html: `<p><code>let x = 5;</code> 이렇게 쓰면 Rust가 알아서 "아 이건 정수구나" 하고 <code>i32</code>로 정해요.</p>
+<pre><code class="language-rust">let x = 5;           // Rust가 알아서 i32
+let y: u32 = 5;      // 내가 "양수만 쓸 거야" 지정</code></pre>
+<p>대부분은 Rust가 알아서 추론해주니까, <strong>타입을 안 써도 됩니다.</strong></p>` },
+      { type: "keypoint", html: `<ul>
+<li>타입 추론: Rust가 알아서 판단 (<code>let x = 5;</code> → i32)</li>
+<li>직접 지정도 가능: <code>let y: u32 = 5;</code></li>
+<li>대부분 안 써도 OK</li>
+</ul>` },
+      { type: "keypoint", html: `<p><strong>타입 읽는 법</strong></p>
+<ul>
+<li><code>i</code> = signed (음수 가능), <code>u</code> = unsigned (양수만), <code>f</code> = float (소수점)</li>
+<li>뒷숫자 = 비트 수 (메모리 크기)</li>
+<li>자주 쓰는 것: <code>i32</code> (기본 정수), <code>f64</code> (기본 실수), <code>bool</code>, <code>&amp;str</code></li>
+</ul>` }
+    ],
+    quiz: {
+      question: "<code>let x = 5;</code>에서 x의 타입은?",
+      options: [
+        "<code>u32</code>",
+        "<code>i32</code>",
+        "<code>i64</code>",
+        "<code>f64</code>"
+      ],
+      answer: 1,
+      explanation: "Rust는 정수 리터럴의 기본 타입을 <code>i32</code>로 추론합니다."
+    }
+  },
+  {
+    title: "3. 섀도잉 — 같은 이름으로 새 변수",
+    steps: [
+      { type: "teacher", html: `<p><code>let</code>으로 만든 변수는 <strong>같은 이름으로 다시 만들 수 있어요.</strong> 이걸 <strong>섀도잉</strong>이라고 해요.</p>
+<pre><code class="language-rust">let x = 5;
+let x = x + 1;   // x는 이제 6
+let x = x * 2;   // x는 이제 12</code></pre>
+<p>"어? mut 안 썼는데 값이 바뀌었잖아?" → 아뇨, 바뀐 게 아니라 <strong>새 변수를 만든 거예요.</strong> 이전 x는 사라지고 새 x가 생긴 거.</p>` },
+      { type: "teacher", html: `<p><strong>mut과의 차이:</strong></p>
+<pre><code class="language-rust">// mut: 같은 변수의 값을 바꿈
+let mut x = 5;
+x = 10;          // 같은 상자에 값만 교체
+
+// 섀도잉: 새 변수를 만듦
+let x = 5;
+let x = "hello"; // 타입까지 바꿀 수 있음! (새 상자니까)</code></pre>
+<p>mut은 타입을 바꿀 수 없지만, 섀도잉은 타입도 바꿀 수 있어요. 왜냐면 완전히 새 변수니까요.</p>` },
+      { type: "student", html: `<p>let이랑 mut이 뭐의 줄임말이죠?</p>` },
+      { type: "teacher", html: `<p><strong>let</strong> = "let" (그대로 영어 "~하게 하다", 수학에서 "let x = 5"처럼 "x를 5로 놓자")</p>
+<p><strong>mut</strong> = "mutable"의 줄임말 (변경 가능한)</p>` },
+      { type: "keypoint", html: `<ul>
+<li>섀도잉 = <code>let</code>으로 같은 이름 재선언 (새 변수)</li>
+<li>mut과 다름: 섀도잉은 <strong>타입도 변경 가능</strong></li>
+<li>let = "let" (수학 표현), mut = "mutable" (변경 가능)</li>
+</ul>` }
+    ],
+    quiz: {
+      question: "섀도잉과 mut의 차이로 올바른 것은?",
+      options: [
+        "둘 다 타입을 바꿀 수 있다",
+        "섀도잉은 새 변수를 만들고, mut은 같은 변수의 값을 바꾼다",
+        "mut은 타입을 바꿀 수 있지만 섀도잉은 못한다",
+        "섀도잉을 쓰면 mut이 자동으로 붙는다"
+      ],
+      answer: 1,
+      explanation: "섀도잉은 <code>let</code>으로 완전히 새 변수를 만드는 것이라 타입도 바꿀 수 있고, <code>mut</code>은 같은 변수의 값만 바꾸는 것이라 타입은 못 바꿔요."
+    }
+  },
+  {
+    title: "4. const vs let",
+    steps: [
+      { type: "teacher", html: `<p>둘 다 못 바꾸는 건 같은데, 핵심 차이는 <strong>값이 언제 정해지느냐</strong>예요.</p>
+<pre><code class="language-rust">let x = some_function();       // OK — 프로그램 실행해봐야 값을 앎
+const MAX: u32 = 100;          // OK — 빌드할 때 이미 100으로 확정
+const Y: u32 = some_function(); // 에러! — 빌드 시점에 값을 모름</code></pre>` },
+      { type: "teacher", html: `<p><strong><code>const</code>는 빌드할 때 값이 확정되어야 해요.</strong> 그래서 타입도 반드시 써줘야 하고, 이름도 <code>대문자_스네이크</code>가 관례예요.</p>
+<p>쉽게 말하면: <code>const</code>는 "절대 변하지 않는 설정값", <code>let</code>은 "한번 정하면 안 바뀌는 변수".</p>` },
+      { type: "keypoint", html: `<ul>
+<li><code>const</code> = 빌드 타임에 확정, 타입 필수, 대문자_스네이크</li>
+<li><code>let</code> = 런타임에 정해져도 OK, 타입 생략 가능</li>
+<li><code>const</code>는 설정값, <code>let</code>은 변수</li>
+</ul>` }
+    ],
+    quiz: {
+      question: "다음 중 const에 대한 설명으로 틀린 것은?",
+      options: [
+        "타입을 반드시 명시해야 한다",
+        "빌드 타임에 값이 확정되어야 한다",
+        "함수 호출 결과를 값으로 쓸 수 있다",
+        "이름은 대문자_스네이크가 관례이다"
+      ],
+      answer: 2,
+      explanation: "<code>const</code>는 빌드 시점에 값이 확정되어야 하므로, 런타임에 실행되는 함수 호출 결과를 값으로 쓸 수 없어요!"
+    }
+  },
+  {
+    title: "5. 튜플과 배열",
+    steps: [
+      { type: "teacher", html: `<p>Rust에서 여러 값을 묶는 방법이 두 가지 있어요.</p>
+<p><strong>튜플</strong> — 타입이 달라도 묶을 수 있음:</p>
+<pre><code class="language-rust">let person = ("철수", 25, true);  // 이름, 나이, 활성 여부
+println!("{}", person.0);          // "철수" — 점(.)과 번호로 접근
+println!("{}", person.1);          // 25</code></pre>` },
+      { type: "teacher", html: `<p><strong>배열</strong> — 같은 타입만, 길이 고정:</p>
+<pre><code class="language-rust">let scores = [90, 85, 77, 92];
+println!("{}", scores[0]);         // 90 — 대괄호[]로 접근
+println!("{}", scores.len());      // 4</code></pre>
+<p>차이를 한 줄로: <strong>튜플은 다른 타입 OK, 배열은 같은 타입만.</strong></p>
+<p>C++의 <code>std::tuple</code>이랑 배열이랑 같은 개념이에요. Rust 배열은 길이가 고정이라, 가변 길이가 필요하면 나중에 배울 <code>Vec</code>을 써요.</p>` },
+      { type: "keypoint", html: `<ul>
+<li>튜플: 다른 타입 묶기 OK, <code>점.번호</code>로 접근</li>
+<li>배열: 같은 타입만, 길이 고정, <code>대괄호[번호]</code>로 접근</li>
+<li>가변 길이 필요하면 → <code>Vec</code> (나중에 배움)</li>
+</ul>` }
+    ],
+    quiz: {
+      question: "튜플의 두 번째 요소에 접근하는 방법은?",
+      options: [
+        "<code>tup[1]</code>",
+        "<code>tup.1</code>",
+        "<code>tup.get(1)</code>",
+        "<code>tup(1)</code>"
+      ],
+      answer: 1,
+      explanation: "튜플은 <code>점.번호</code>로 접근합니다. 배열은 <code>대괄호[번호]</code>이고요. 인덱스는 0부터 시작하므로 두 번째는 <code>.1</code>이에요."
+    }
+  },
+  {
+    title: "6. Ch02 총정리",
+    steps: [
+      { type: "teacher", html: `<p>지금까지 배운 내용을 정리해볼게요!</p>
+<p><strong>Rust의 철학</strong>: "실수를 컴파일 타임에 잡자" → 불변 기본, 타입 안전성</p>` },
+      { type: "keypoint", html: `<table style="width:100%; border-collapse:collapse; font-size:0.88rem;">
+<tr style="background:#e65100;color:#fff;"><th style="padding:8px;text-align:left;">개념</th><th style="padding:8px;text-align:left;">한 줄 요약</th></tr>
+<tr style="border-bottom:1px solid #ddd;"><td style="padding:8px;"><code>let</code></td><td style="padding:8px;">불변 변수 (기본)</td></tr>
+<tr style="border-bottom:1px solid #ddd;"><td style="padding:8px;"><code>let mut</code></td><td style="padding:8px;">가변 변수 (명시적 선언)</td></tr>
+<tr style="border-bottom:1px solid #ddd;"><td style="padding:8px;"><code>const</code></td><td style="padding:8px;">상수 (빌드 타임 확정, 타입 필수)</td></tr>
+<tr style="border-bottom:1px solid #ddd;"><td style="padding:8px;">섀도잉</td><td style="padding:8px;"><code>let</code>으로 같은 이름 재선언 (타입 변경 가능)</td></tr>
+<tr style="border-bottom:1px solid #ddd;"><td style="padding:8px;">타입 추론</td><td style="padding:8px;">대부분 Rust가 알아서 판단</td></tr>
+<tr style="border-bottom:1px solid #ddd;"><td style="padding:8px;">튜플</td><td style="padding:8px;">다른 타입 묶기, <code>tup.0</code>으로 접근</td></tr>
+<tr><td style="padding:8px;">배열</td><td style="padding:8px;">같은 타입, 고정 길이, <code>arr[0]</code>으로 접근</td></tr>
+</table>` }
+    ],
+    quiz: {
+      question: "다음 중 Rust에서 유효한 코드는?",
+      options: [
+        "<code>let x = 5; x = 10;</code>",
+        "<code>const MAX = 100;</code>",
+        "<code>let x = 5; let x = \"hello\";</code>",
+        "<code>let mut x = 5; x = \"hello\";</code>"
+      ],
+      answer: 2,
+      explanation: "섀도잉으로 같은 이름의 새 변수를 만들면 타입도 바꿀 수 있어요! 1번은 mut 없이 변경, 2번은 const에 타입 누락, 4번은 mut으로 타입 변경 시도 — 모두 에러입니다."
+    }
+  }
+];
+
+// ─── State ──────────────────────────────────────────────────────────────────
+
+const STORAGE_KEY = "ch02_progress";
+let state = loadState();
+
+function loadState() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) return JSON.parse(saved);
+  } catch {}
+  return { sectionIdx: 0, stepIdx: -1, quizPassed: [] };
+}
+
+function saveState() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {}
+}
+
+// ─── DOM ────────────────────────────────────────────────────────────────────
+
+const chat = document.getElementById("chat");
+const btnPrev = document.getElementById("btnPrev");
+const btnNext = document.getElementById("btnNext");
+const progressFill = document.getElementById("progressFill");
+const progressLabel = document.getElementById("progressLabel");
+const stepIndicator = document.getElementById("stepIndicator");
+const mainArea = document.getElementById("mainArea");
+
+// ─── Render helpers ─────────────────────────────────────────────────────────
+
+function renderBubble(step) {
+  const div = document.createElement("div");
+  if (step.type === "teacher" || step.type === "student") {
+    div.className = `bubble ${step.type}`;
+    const roleLabel = step.type === "teacher" ? "선생님" : "학생";
+    div.innerHTML = `<div class="role">${roleLabel}</div>${step.html}`;
+  } else if (step.type === "keypoint") {
+    div.className = "keypoint";
+    div.innerHTML = `<div class="keypoint-title">핵심 정리</div>${step.html}`;
+  }
+  return div;
+}
+
+function renderSectionDivider(title) {
+  const div = document.createElement("div");
+  div.className = "section-divider";
+  div.innerHTML = `<span>${title}</span>`;
+  return div;
+}
+
+function renderQuiz(quiz, sectionIdx) {
+  const div = document.createElement("div");
+  div.className = "quiz-card";
+  let optHtml = quiz.options.map((o, i) =>
+    `<button class="quiz-option" data-idx="${i}">${o}</button>`
+  ).join("");
+  div.innerHTML = `<h3>퀴즈</h3><p style="margin-bottom:12px;">${quiz.question}</p>${optHtml}<div class="quiz-feedback" id="qf-${sectionIdx}"></div>`;
+  return div;
+}
+
+function renderCompletion() {
+  const div = document.createElement("div");
+  div.className = "completion";
+  div.innerHTML = `<h2>학습 완료!</h2>
+<p>Ch02 변수와 타입 튜토리얼을 모두 마쳤습니다.</p>
+<table class="summary-table">
+<tr><th>개념</th><th>한 줄 요약</th></tr>
+<tr><td><code>let</code></td><td>불변 변수 (기본)</td></tr>
+<tr><td><code>let mut</code></td><td>가변 변수</td></tr>
+<tr><td><code>const</code></td><td>빌드 타임 상수</td></tr>
+<tr><td>섀도잉</td><td>같은 이름 재선언</td></tr>
+<tr><td>타입 추론</td><td>Rust가 자동 판단</td></tr>
+<tr><td>튜플 / 배열</td><td>여러 값 묶기</td></tr>
+</table>
+<button class="restart-btn" onclick="restart()">처음부터 다시</button>`;
+  return div;
+}
+
+// ─── Core logic ─────────────────────────────────────────────────────────────
+
+function totalStepsInSection(secIdx) {
+  // steps + 1 (quiz)
+  return SECTIONS[secIdx].steps.length + 1;
+}
+
+function isQuizStep() {
+  return state.stepIdx >= SECTIONS[state.sectionIdx].steps.length;
+}
+
+function isCompleted() {
+  return state.sectionIdx >= SECTIONS.length;
+}
+
+function quizLocked() {
+  // Quiz is showing but not yet passed
+  return isQuizStep() && !state.quizPassed.includes(state.sectionIdx);
+}
+
+function rebuildChat() {
+  chat.innerHTML = "";
+
+  // Render all completed sections
+  for (let s = 0; s < state.sectionIdx; s++) {
+    chat.appendChild(renderSectionDivider(SECTIONS[s].title));
+    SECTIONS[s].steps.forEach(step => {
+      const el = renderBubble(step);
+      el.style.animation = "none";
+      el.style.opacity = "1";
+      el.style.transform = "none";
+      chat.appendChild(el);
+    });
+    // Show passed quiz as a success note
+    const note = document.createElement("div");
+    note.className = "keypoint";
+    note.style.animation = "none";
+    note.style.opacity = "1";
+    note.style.transform = "none";
+    note.innerHTML = `<div class="keypoint-title">퀴즈 통과!</div><p>${SECTIONS[s].quiz.explanation}</p>`;
+    chat.appendChild(note);
+  }
+
+  if (isCompleted()) {
+    chat.appendChild(renderCompletion());
+    updateUI();
+    scrollToBottom();
+    return;
+  }
+
+  // Current section
+  const sec = SECTIONS[state.sectionIdx];
+  chat.appendChild(renderSectionDivider(sec.title));
+  // Mark previous steps as instant
+  const showCount = Math.min(state.stepIdx + 1, sec.steps.length);
+  for (let i = 0; i < showCount; i++) {
+    const el = renderBubble(sec.steps[i]);
+    if (i < showCount - 1) {
+      el.style.animation = "none";
+      el.style.opacity = "1";
+      el.style.transform = "none";
+    }
+    chat.appendChild(el);
+  }
+
+  // Quiz step
+  if (isQuizStep()) {
+    const qEl = renderQuiz(sec.quiz, state.sectionIdx);
+    chat.appendChild(qEl);
+    if (state.quizPassed.includes(state.sectionIdx)) {
+      markQuizPassed(qEl, sec.quiz);
+    } else {
+      bindQuiz(qEl, sec.quiz, state.sectionIdx);
+    }
+  }
+
+  // Highlight code blocks
+  chat.querySelectorAll("pre code").forEach(el => hljs.highlightElement(el));
+  updateUI();
+  scrollToBottom();
+}
+
+function bindQuiz(container, quiz, secIdx) {
+  const btns = container.querySelectorAll(".quiz-option");
+  const feedback = container.querySelector(".quiz-feedback");
+  btns.forEach(btn => {
+    btn.addEventListener("click", () => {
+      const idx = parseInt(btn.dataset.idx);
+      if (idx === quiz.answer) {
+        btn.classList.add("correct");
+        feedback.className = "quiz-feedback show correct";
+        feedback.innerHTML = "정답! " + quiz.explanation;
+        btns.forEach(b => b.disabled = true);
+        if (!state.quizPassed.includes(secIdx)) {
+          state.quizPassed.push(secIdx);
+          saveState();
+        }
+        updateUI();
+      } else {
+        btn.classList.add("wrong");
+        btn.disabled = true;
+        feedback.className = "quiz-feedback show wrong";
+        feedback.textContent = "틀렸어요. 다시 골라보세요!";
+      }
+    });
+  });
+}
+
+function markQuizPassed(container, quiz) {
+  const btns = container.querySelectorAll(".quiz-option");
+  const feedback = container.querySelector(".quiz-feedback");
+  btns.forEach(btn => {
+    const idx = parseInt(btn.dataset.idx);
+    if (idx === quiz.answer) btn.classList.add("correct");
+    btn.disabled = true;
+  });
+  feedback.className = "quiz-feedback show correct";
+  feedback.innerHTML = "정답! " + quiz.explanation;
+}
+
+function next() {
+  if (isCompleted()) return;
+  if (quizLocked()) return;
+
+  const sec = SECTIONS[state.sectionIdx];
+  const maxStep = sec.steps.length; // quiz is at index === steps.length
+
+  if (state.stepIdx < maxStep) {
+    state.stepIdx++;
+    saveState();
+    rebuildChat();
+  } else if (state.quizPassed.includes(state.sectionIdx)) {
+    // Move to next section
+    state.sectionIdx++;
+    state.stepIdx = -1;
+    saveState();
+    if (isCompleted()) {
+      rebuildChat();
+    } else {
+      next(); // auto-show first step
+    }
+  }
+}
+
+function prev() {
+  if (state.stepIdx > 0) {
+    state.stepIdx--;
+    saveState();
+    rebuildChat();
+  } else if (state.sectionIdx > 0) {
+    state.sectionIdx--;
+    state.stepIdx = SECTIONS[state.sectionIdx].steps.length; // quiz step
+    saveState();
+    rebuildChat();
+  }
+}
+
+function restart() {
+  state = { sectionIdx: 0, stepIdx: -1, quizPassed: [] };
+  saveState();
+  next();
+}
+
+function updateUI() {
+  const completed = isCompleted();
+  const totalSections = SECTIONS.length;
+  const pct = completed ? 100 : (state.sectionIdx / totalSections) * 100;
+  progressFill.style.width = pct + "%";
+  progressLabel.textContent = completed
+    ? "완료!"
+    : `${state.sectionIdx + 1} / ${totalSections}`;
+
+  btnPrev.disabled = (state.sectionIdx === 0 && state.stepIdx <= 0);
+
+  if (completed) {
+    btnNext.disabled = true;
+    stepIndicator.textContent = "";
+  } else if (quizLocked()) {
+    btnNext.disabled = true;
+    stepIndicator.textContent = "퀴즈를 풀어주세요";
+  } else {
+    btnNext.disabled = false;
+    const sec = SECTIONS[state.sectionIdx];
+    const total = sec.steps.length + 1;
+    const cur = Math.min(state.stepIdx + 1, total);
+    stepIndicator.textContent = `${cur} / ${total}`;
+  }
+}
+
+function scrollToBottom() {
+  requestAnimationFrame(() => {
+    mainArea.scrollTop = mainArea.scrollHeight;
+  });
+}
+
+// ─── Events ─────────────────────────────────────────────────────────────────
+
+btnNext.addEventListener("click", next);
+btnPrev.addEventListener("click", prev);
+document.getElementById("btnReset").addEventListener("click", () => {
+  if (confirm("진행 상태를 초기화하고 처음부터 시작할까요?")) restart();
+});
+document.addEventListener("keydown", e => {
+  if (e.key === "Enter" && !e.ctrlKey && !e.altKey && !e.shiftKey) {
+    if (document.activeElement?.classList.contains("quiz-option")) return;
+    next();
+  }
+  if (e.key === "ArrowRight") next();
+  if (e.key === "ArrowLeft") prev();
+});
+
+// ─── Init ───────────────────────────────────────────────────────────────────
+
+if (state.stepIdx === -1 && state.sectionIdx === 0) {
+  next(); // show first step
+} else {
+  rebuildChat();
+}
+</script>
+</body>
+</html>
