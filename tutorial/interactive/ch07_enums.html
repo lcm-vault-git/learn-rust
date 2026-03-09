@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ch07: 열거형과 패턴 매칭 — 대화형 튜토리얼</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root { --teacher-bg: #e3f2fd; --student-bg: #e8f5e9; --keypoint-bg: #fff8e1; --keypoint-border: #ffb300; --quiz-bg: #f3e5f5; --primary: #1565c0; --success: #2e7d32; --danger: #c62828; --text: #212121; --text-light: #757575; --bg: #fafafa; --header-h: 56px; --footer-h: 64px; }
+  body { font-family: 'Segoe UI',-apple-system,BlinkMacSystemFont,sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; display: flex; flex-direction: column; min-height: 100vh; }
+  header { position: sticky; top: 0; z-index: 100; background: var(--primary); color: #fff; height: var(--header-h); display: flex; align-items: center; padding: 0 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+  header h1 { font-size: 1.1rem; font-weight: 600; flex: 1; white-space: nowrap; }
+  .reset-btn { background: none; border: 1px solid rgba(255,255,255,0.5); color: rgba(255,255,255,0.85); padding: 3px 10px; border-radius: 4px; font-size: 0.72rem; cursor: pointer; font-family: inherit; margin-right: 12px; transition: all 0.2s; }
+  .reset-btn:hover { background: rgba(255,255,255,0.15); border-color: #fff; color: #fff; }
+  .progress-wrapper { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; }
+  .progress-bar { width: 120px; height: 6px; background: rgba(255,255,255,0.3); border-radius: 3px; overflow: hidden; }
+  .progress-fill { height: 100%; background: #fff; border-radius: 3px; transition: width 0.4s ease; }
+  main { flex: 1; overflow-y: auto; padding: 20px 16px; padding-bottom: calc(var(--footer-h) + 20px); }
+  .chat-container { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
+  .bubble { max-width: 85%; padding: 14px 18px; border-radius: 18px; font-size: 0.95rem; opacity: 0; transform: translateY(20px); animation: slideUp 0.35s ease forwards; word-break: keep-all; overflow-wrap: break-word; }
+  @keyframes slideUp { to { opacity: 1; transform: translateY(0); } }
+  .bubble.teacher { align-self: flex-start; background: var(--teacher-bg); border-bottom-left-radius: 4px; }
+  .bubble.student { align-self: flex-end; background: var(--student-bg); border-bottom-right-radius: 4px; }
+  .bubble .role { font-size: 0.75rem; font-weight: 700; margin-bottom: 4px; }
+  .bubble.teacher .role { color: var(--primary); } .bubble.student .role { color: var(--success); }
+  .bubble p { margin: 6px 0; } .bubble p:first-of-type { margin-top: 0; }
+  .bubble strong { font-weight: 600; }
+  .bubble code { background: rgba(0,0,0,0.07); padding: 1px 5px; border-radius: 3px; font-size: 0.88em; font-family: 'Cascadia Code','Fira Code',Consolas,monospace; }
+  .bubble pre { margin: 10px -8px; border-radius: 8px; overflow-x: auto; }
+  .bubble pre code { background: none; padding: 14px 16px; display: block; font-size: 0.85em; line-height: 1.5; }
+  .bubble ul, .bubble ol { padding-left: 20px; margin: 6px 0; } .bubble li { margin: 3px 0; }
+  .bubble table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 0.88rem; }
+  .bubble th, .bubble td { padding: 6px 10px; border: 1px solid rgba(0,0,0,0.12); text-align: left; }
+  .bubble th { background: rgba(0,0,0,0.06); font-weight: 600; }
+  .keypoint { max-width: 85%; align-self: center; background: var(--keypoint-bg); border-left: 4px solid var(--keypoint-border); border-radius: 8px; padding: 14px 18px; font-size: 0.9rem; opacity: 0; transform: translateY(20px); animation: slideUp 0.35s ease forwards; }
+  .keypoint-title { font-weight: 700; color: #e65100; margin-bottom: 6px; font-size: 0.85rem; }
+  .keypoint ul { padding-left: 18px; margin: 4px 0; } .keypoint li { margin: 3px 0; }
+  .keypoint code { background: rgba(0,0,0,0.06); padding: 1px 4px; border-radius: 3px; font-family: 'Cascadia Code','Fira Code',Consolas,monospace; font-size: 0.88em; }
+  .quiz-card { max-width: 85%; align-self: center; background: var(--quiz-bg); border-radius: 16px; padding: 20px 22px; opacity: 0; transform: translateY(20px); animation: slideUp 0.35s ease forwards; }
+  .quiz-card h3 { font-size: 0.95rem; margin-bottom: 14px; color: #6a1b9a; }
+  .quiz-option { display: block; width: 100%; text-align: left; padding: 10px 14px; margin: 6px 0; border: 2px solid #ce93d8; border-radius: 10px; background: #fff; cursor: pointer; font-size: 0.9rem; font-family: inherit; transition: all 0.2s; }
+  .quiz-option:hover:not(:disabled) { background: #f3e5f5; border-color: #ab47bc; }
+  .quiz-option:disabled { cursor: default; }
+  .quiz-option.correct { background: #c8e6c9; border-color: var(--success); color: var(--success); font-weight: 600; }
+  .quiz-option.wrong { background: #ffcdd2; border-color: var(--danger); color: var(--danger); }
+  .quiz-option code { font-family: 'Cascadia Code','Fira Code',Consolas,monospace; font-size: 0.88em; }
+  .quiz-feedback { margin-top: 12px; padding: 10px 14px; border-radius: 8px; font-size: 0.88rem; display: none; }
+  .quiz-feedback.show { display: block; } .quiz-feedback.correct { background: #c8e6c9; color: #1b5e20; } .quiz-feedback.wrong { background: #ffcdd2; color: #b71c1c; }
+  .section-divider { text-align: center; padding: 20px 0 10px; opacity: 0; animation: slideUp 0.35s ease forwards; }
+  .section-divider span { display: inline-block; background: var(--primary); color: #fff; padding: 6px 18px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; }
+  .flashcard-container { max-width: 85%; align-self: center; perspective: 800px; opacity: 0; transform: translateY(20px); animation: slideUp 0.35s ease forwards; }
+  .flashcard { width: 100%; min-height: 160px; cursor: pointer; position: relative; transform-style: preserve-3d; transition: transform 0.5s ease; border-radius: 14px; }
+  .flashcard.flipped { transform: rotateY(180deg); }
+  .flashcard-face { position: absolute; top: 0; left: 0; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px 24px; text-align: center; font-size: 0.92rem; }
+  .flashcard-front { background: linear-gradient(135deg, #e3f2fd, #bbdefb); border: 2px solid #90caf9; }
+  .flashcard-back { background: linear-gradient(135deg, #e8f5e9, #c8e6c9); border: 2px solid #81c784; transform: rotateY(180deg); }
+  .flashcard-label { font-size: 0.72rem; font-weight: 700; color: var(--text-light); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+  .flashcard-content { font-size: 1rem; line-height: 1.5; }
+  .flashcard-content code { background: rgba(0,0,0,0.08); padding: 1px 5px; border-radius: 3px; font-family: 'Cascadia Code','Fira Code',Consolas,monospace; font-size: 0.9em; }
+  .flashcard-hint { font-size: 0.75rem; color: var(--text-light); margin-top: 10px; }
+  .flashcard-nav { display: flex; justify-content: center; gap: 8px; margin-top: 10px; }
+  .flashcard-nav button { padding: 5px 14px; border: 1px solid #90caf9; border-radius: 6px; background: #fff; cursor: pointer; font-size: 0.8rem; font-family: inherit; }
+  .flashcard-nav button:hover { background: #e3f2fd; }
+  .flashcard-counter { font-size: 0.75rem; color: var(--text-light); text-align: center; margin-top: 6px; }
+  .match-card { max-width: 85%; align-self: center; background: #fce4ec; border-radius: 14px; padding: 20px 22px; opacity: 0; transform: translateY(20px); animation: slideUp 0.35s ease forwards; }
+  .match-card h3 { font-size: 0.9rem; color: #880e4f; margin-bottom: 14px; }
+  .match-columns { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+  .match-col { display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 140px; }
+  .match-col-label { font-size: 0.75rem; font-weight: 700; color: var(--text-light); text-align: center; margin-bottom: 4px; }
+  .match-item { padding: 10px 14px; border-radius: 10px; text-align: center; font-size: 0.88rem; cursor: pointer; transition: all 0.2s; user-select: none; font-family: inherit; }
+  .match-left { background: #fff; border: 2px solid #f48fb1; } .match-left:hover { background: #fce4ec; }
+  .match-left.selected { background: #f48fb1; color: #fff; border-color: #e91e63; }
+  .match-left.matched { background: #c8e6c9; border-color: var(--success); color: var(--success); cursor: default; }
+  .match-right { background: #fff; border: 2px solid #ce93d8; } .match-right:hover { background: #f3e5f5; }
+  .match-right.matched { background: #c8e6c9; border-color: var(--success); color: var(--success); cursor: default; }
+  .match-right.wrong-flash { animation: wrongShake 0.4s ease; }
+  @keyframes wrongShake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+  .match-item code { font-family: 'Cascadia Code','Fira Code',Consolas,monospace; font-size: 0.88em; }
+  .match-feedback { margin-top: 12px; padding: 8px 12px; border-radius: 6px; font-size: 0.85rem; text-align: center; display: none; }
+  .match-feedback.show { display: block; } .match-feedback.correct { background: #c8e6c9; color: #1b5e20; }
+  .compile-check-card { max-width: 85%; align-self: center; background: #e0f2f1; border-radius: 14px; padding: 20px 22px; opacity: 0; transform: translateY(20px); animation: slideUp 0.35s ease forwards; }
+  .compile-check-card h3 { font-size: 0.9rem; color: #00695c; margin-bottom: 14px; }
+  .cc-item { background: #fff; border: 2px solid #80cbc4; border-radius: 10px; margin: 10px 0; padding: 12px 14px; transition: all 0.3s; }
+  .cc-item pre { margin: 0 0 10px; border-radius: 6px; overflow-x: auto; }
+  .cc-item pre code { padding: 10px 14px; display: block; font-size: 0.83em; line-height: 1.45; }
+  .cc-buttons { display: flex; gap: 8px; }
+  .cc-btn { flex: 1; padding: 8px; border: 2px solid #b2dfdb; border-radius: 8px; background: #fff; cursor: pointer; font-family: inherit; font-size: 0.85rem; font-weight: 600; transition: all 0.2s; }
+  .cc-btn:hover:not(:disabled) { background: #e0f2f1; } .cc-btn:disabled { cursor: default; opacity: 0.7; }
+  .cc-btn.btn-ok { color: var(--success); } .cc-btn.btn-err { color: var(--danger); }
+  .cc-btn.chosen-correct { background: #c8e6c9; border-color: var(--success); }
+  .cc-btn.chosen-wrong { background: #ffcdd2; border-color: var(--danger); }
+  .cc-item.resolved { border-color: #c8e6c9; }
+  .cc-explain { margin-top: 8px; padding: 8px 12px; border-radius: 6px; font-size: 0.83rem; display: none; }
+  .cc-explain.show { display: block; } .cc-explain.correct { background: #c8e6c9; color: #1b5e20; } .cc-explain.wrong { background: #ffcdd2; color: #b71c1c; }
+  .cc-score { margin-top: 14px; text-align: center; font-size: 0.9rem; font-weight: 700; color: #00695c; display: none; }
+  .cc-score.show { display: block; }
+  .drag-fill-card { max-width: 85%; align-self: center; background: #e8eaf6; border-radius: 14px; padding: 20px 22px; opacity: 0; transform: translateY(20px); animation: slideUp 0.35s ease forwards; }
+  .drag-fill-card h3 { font-size: 0.9rem; color: #283593; margin-bottom: 8px; }
+  .drag-fill-card pre { margin: 8px 0; border-radius: 8px; overflow-x: auto; }
+  .drag-fill-card pre code { padding: 14px 16px; display: block; font-size: 0.85em; line-height: 1.5; }
+  .drag-candidates { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; justify-content: center; }
+  .drag-chip { display: inline-block; padding: 6px 14px; background: #fff; border: 2px solid #7986cb; border-radius: 20px; font-family: 'Cascadia Code','Fira Code',Consolas,monospace; font-size: 0.88em; cursor: grab; user-select: none; transition: all 0.2s; }
+  .drag-chip:hover { background: #c5cae9; } .drag-chip.dragging { opacity: 0.4; }
+  .drag-chip.used { opacity: 0.3; cursor: default; border-style: dashed; }
+  .drag-slot { display: inline-block; min-width: 60px; padding: 3px 10px; margin: 0 2px; border: 2px dashed #7986cb; border-radius: 6px; background: rgba(255,255,255,0.7); font-family: 'Cascadia Code','Fira Code',Consolas,monospace; font-size: 0.88em; text-align: center; min-height: 1.6em; vertical-align: middle; transition: all 0.2s; cursor: pointer; }
+  .drag-slot.dragover { background: #c5cae9; border-color: #3949ab; }
+  .drag-slot.filled { background: #e8eaf6; border-style: solid; border-color: #5c6bc0; }
+  .drag-slot.correct { background: #c8e6c9; border-color: var(--success); border-style: solid; }
+  .drag-slot.wrong { background: #ffcdd2; border-color: var(--danger); border-style: solid; }
+  .fill-check-btn { display: block; margin: 14px auto 0; padding: 8px 24px; background: #3f51b5; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-family: inherit; font-size: 0.88rem; }
+  .fill-check-btn:hover { background: #283593; } .fill-check-btn:disabled { opacity: 0.4; cursor: default; }
+  .fill-feedback { margin-top: 10px; padding: 8px 12px; border-radius: 6px; font-size: 0.85rem; display: none; text-align: center; }
+  .fill-feedback.show { display: block; } .fill-feedback.correct { background: #c8e6c9; color: #1b5e20; } .fill-feedback.wrong { background: #ffcdd2; color: #b71c1c; }
+  .completion { text-align: center; padding: 40px 20px; opacity: 0; animation: slideUp 0.5s ease forwards; }
+  .completion h2 { font-size: 1.5rem; margin-bottom: 12px; color: var(--primary); }
+  .completion p { color: var(--text-light); margin: 6px 0; }
+  .completion .summary-table { margin: 20px auto; border-collapse: collapse; font-size: 0.9rem; }
+  .completion .summary-table th, .completion .summary-table td { padding: 8px 16px; border: 1px solid #e0e0e0; text-align: left; }
+  .completion .summary-table th { background: var(--primary); color: #fff; }
+  .restart-btn { margin-top: 20px; padding: 10px 28px; background: var(--primary); color: #fff; border: none; border-radius: 8px; font-size: 1rem; cursor: pointer; font-family: inherit; }
+  .restart-btn:hover { background: #0d47a1; }
+  footer { position: fixed; bottom: 0; left: 0; right: 0; height: var(--footer-h); background: #fff; border-top: 1px solid #e0e0e0; display: flex; align-items: center; justify-content: center; gap: 16px; padding: 0 20px; z-index: 100; }
+  .nav-btn { padding: 10px 32px; border: none; border-radius: 10px; font-size: 0.95rem; font-weight: 600; cursor: pointer; font-family: inherit; transition: all 0.2s; }
+  .nav-btn:disabled { opacity: 0.4; cursor: default; }
+  .btn-prev { background: #e0e0e0; color: var(--text); } .btn-prev:hover:not(:disabled) { background: #bdbdbd; }
+  .btn-next { background: var(--primary); color: #fff; } .btn-next:hover:not(:disabled) { background: #0d47a1; }
+  .step-indicator { font-size: 0.8rem; color: var(--text-light); min-width: 60px; text-align: center; }
+  @media (max-width: 600px) {
+    header h1 { font-size: 0.95rem; } .progress-bar { width: 80px; }
+    .bubble, .keypoint, .quiz-card, .flashcard-container, .drag-fill-card, .match-card, .compile-check-card { max-width: 92%; font-size: 0.9rem; }
+    .nav-btn { padding: 10px 24px; font-size: 0.9rem; } .match-columns { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Ch07: 열거형과 패턴 매칭</h1>
+  <button class="reset-btn" id="btnReset" title="처음부터 다시 시작">초기화</button>
+  <div class="progress-wrapper">
+    <span id="progressLabel">1 / 6</span>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+  </div>
+</header>
+<main id="mainArea"><div class="chat-container" id="chat"></div></main>
+<footer>
+  <button class="nav-btn btn-prev" id="btnPrev" disabled>이전</button>
+  <span class="step-indicator" id="stepIndicator"></span>
+  <button class="nav-btn btn-next" id="btnNext">다음</button>
+</footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/rust.min.js"></script>
+<script>
+const SECTIONS = [
+  {
+    title: "1. 열거형 기본 — 데이터를 품는 enum",
+    steps: [
+      { type: "teacher", html: `<p>C++이나 Java의 enum은 그냥 숫자에 이름 붙인 거잖아요? Rust의 enum은 <strong>각 변형(variant)에 데이터를 넣을 수 있어요.</strong></p>
+<pre><code class="language-rust">// C++ 스타일 — 그냥 구분용
+enum Direction { Up, Down, Left, Right }
+
+// Rust만의 방식 — 데이터를 품음
+enum Message {
+    Quit,                        // 데이터 없음
+    Move { x: i32, y: i32 },    // 구조체처럼 이름 붙은 필드
+    Write(String),               // String 하나를 품음
+    Color(u8, u8, u8),           // 튜플처럼 여러 값
+}</code></pre>` },
+      { type: "student", html: `<p>이거 그냥 여러 struct를 하나로 묶은 거 아니야?</p>` },
+      { type: "teacher", html: `<p>정확한 비유예요! C++로 치면 <code>union</code> + <code>enum</code>을 안전하게 합친 거예요. Rust에서는 이걸 <strong>tagged union</strong>이라고도 불러요.</p>
+<table><tr><th></th><th>C++ enum</th><th>Java enum</th><th>Rust enum</th></tr>
+<tr><td>데이터 포함</td><td>X</td><td>필드 가능 (제한적)</td><td>변형별로 다른 데이터</td></tr>
+<tr><td>패턴 매칭</td><td>switch (빈틈 가능)</td><td>switch (빈틈 가능)</td><td>match (빈틈 불가)</td></tr>
+<tr><td>타입 안전성</td><td>약함 (정수 캐스팅)</td><td>보통</td><td>강함</td></tr></table>` },
+      { type: "keypoint", html: `<ul><li>Rust enum = 각 변형(variant)에 서로 다른 데이터를 넣을 수 있음</li><li>C++ union + enum을 안전하게 합친 것 (tagged union)</li><li><code>Message::Write(String)</code> 처럼 변형마다 다른 구조 가능</li></ul>` }
+    ],
+    quiz: {
+      question: "Rust enum에 대한 설명으로 올바른 것은?",
+      options: [
+        "C++ enum처럼 숫자만 가능하다",
+        "각 변형(variant)에 서로 다른 데이터를 넣을 수 있다",
+        "패턴 매칭 없이 사용한다",
+        "Java enum과 완전히 동일하다"
+      ],
+      answer: 1,
+      explanation: "Rust enum은 각 variant에 서로 다른 타입과 수의 데이터를 넣을 수 있어요."
+    }
+  },
+  {
+    title: "2. match — 빈틈 없는 패턴 매칭",
+    steps: [
+      { type: "teacher", html: `<p>enum을 쓰려면 <code>match</code>로 각 경우를 처리해요.</p>
+<pre><code class="language-rust">fn process(msg: Message) {
+    match msg {
+        Message::Quit => println!("종료"),
+        Message::Move { x, y } => println!("이동: ({x}, {y})"),
+        Message::Write(text) => println!("메시지: {text}"),
+        Message::Color(r, g, b) => println!("색상: {r},{g},{b}"),
+    }
+}</code></pre>
+<p><strong>핵심: 모든 변형을 다뤄야 해요.</strong> 하나라도 빠뜨리면 컴파일 에러!</p>` },
+      { type: "student", html: `<p>다 처리하기 귀찮은데, 나머지는 무시하면 안 돼?</p>` },
+      { type: "teacher", html: `<p><code>_</code> 와일드카드를 쓰면 돼요.</p>
+<pre><code class="language-rust">match msg {
+    Message::Quit => println!("종료"),
+    _ => println!("기타"),  // 나머지 전부
+}</code></pre>
+<p>근데 이게 <strong>일부러 빡빡하게 만든 거</strong>예요. C++의 switch에서 case를 빠뜨려서 버그 나는 경우 많잖아요? Rust는 컴파일러가 "너 이 경우 안 다뤘어"라고 알려줘요.</p>
+<p>나중에 enum에 새 변형을 추가하면? 모든 match 문에서 컴파일 에러가 나요. 그래서 <strong>빠뜨리는 게 불가능</strong>해요.</p>` },
+      { type: "student", html: `<p>match에서 값도 꺼낼 수 있는 거야?</p>` },
+      { type: "teacher", html: `<p>네! 그게 패턴 매칭의 핵심이에요. <code>Message::Move { x, y }</code>처럼 쓰면 안에 든 값이 변수에 바인딩돼요.</p>
+<pre><code class="language-rust">let msg = Message::Move { x: 10, y: 20 };
+match msg {
+    Message::Move { x, y } => println!("x={x}, y={y}"),  // x=10, y=20
+    _ => {}
+}</code></pre>
+<p><strong>match는 분기 + 값 추출을 동시에 해요.</strong> if-else 체인보다 훨씬 강력해요.</p>` },
+      { type: "keypoint", html: `<ul><li><code>match</code>는 모든 경우를 다뤄야 함 (exhaustive) → 빠뜨림 방지</li><li><code>_</code>로 나머지 처리 가능</li><li>패턴 매칭으로 값 추출: <code>Message::Write(text)</code> → text에 바인딩</li><li>enum에 변형 추가 시 → 모든 match에서 컴파일 에러 → 실수 방지</li></ul>` },
+      { type: "compile-check", config: {
+        title: "이 코드, 컴파일 될까? — match 편",
+        items: [
+          { code: 'match msg {\n    Message::Quit => println!("종료"),\n}', compiles: false,
+            explain: "match는 모든 변형을 다뤄야 해요! Move, Write, Color가 빠졌어요." },
+          { code: 'match msg {\n    Message::Quit => println!("종료"),\n    _ => println!("기타"),\n}', compiles: true,
+            explain: "_로 나머지 전부 처리했으니 OK!" },
+          { code: 'match msg {\n    Message::Quit => println!("종료"),\n    Message::Move { x, y } => println!("{x},{y}"),\n    Message::Write(t) => println!("{t}"),\n    Message::Color(r,g,b) => println!("{r},{g},{b}"),\n}', compiles: true,
+            explain: "모든 변형을 빠짐없이 다뤘으니 OK!" }
+        ]
+      }}
+    ],
+    quiz: {
+      question: "match에 대한 설명으로 올바른 것은?",
+      options: [
+        "일부 경우만 다뤄도 된다",
+        "모든 경우를 다뤄야 컴파일된다(exhaustive)",
+        "switch문과 동일하다",
+        "값 추출은 불가능하다"
+      ],
+      answer: 1,
+      explanation: "match는 모든 경우를 다뤄야 해요(exhaustive). 빠뜨리면 컴파일 에러!"
+    }
+  },
+  {
+    title: "3. Option<T> — null이 없는 세상",
+    steps: [
+      { type: "teacher", html: `<p>Rust에는 <code>null</code>이 없어요. 대신 <strong>값이 있을 수도 없을 수도 있는 상황</strong>을 <code>Option&lt;T&gt;</code>으로 표현해요.</p>
+<pre><code class="language-rust">enum Option&lt;T&gt; {
+    Some(T),   // 값이 있음
+    None,      // 값이 없음
+}
+
+let age: Option&lt;u32&gt; = Some(25);
+let name: Option&lt;String&gt; = None;</code></pre>` },
+      { type: "student", html: `<p>null이 왜 위험해? Java에서 잘 쓰고 있는데.</p>` },
+      { type: "teacher", html: `<p>Java에서 <code>NullPointerException</code> 안 만나봤어요? Tony Hoare(null을 발명한 사람)가 직접 <strong>"10억 달러짜리 실수"</strong>라고 부를 정도예요.</p>
+<pre><code class="language-rust">// Java — 컴파일 OK, 런타임에 터짐
+// String name = null;
+// name.length();  // NullPointerException!
+
+// Rust — 컴파일 타임에 차단
+let name: Option&lt;String&gt; = None;
+// name.len();  // 에러! Option&lt;String&gt;은 String이 아님
+
+// 값을 쓰려면 반드시 꺼내야 함
+match name {
+    Some(n) => println!("길이: {}", n.len()),
+    None => println!("이름 없음"),
+}</code></pre>
+<p><strong>Option은 "이 값은 없을 수도 있어"를 타입으로 명시하는 거예요.</strong> 컴파일러가 None 처리를 강제해요.</p>` },
+      { type: "student", html: `<p>Java의 Optional이랑 비슷한 거네?</p>` },
+      { type: "teacher", html: `<p>맞아요, 개념은 같아요. 차이는:</p>
+<table><tr><th></th><th>Java Optional</th><th>Rust Option</th></tr>
+<tr><td>사용 강제</td><td>X (그냥 null 써도 됨)</td><td>O (null 자체가 없음)</td></tr>
+<tr><td>성능 비용</td><td>힙 할당 (객체)</td><td>제로 코스트 (컴파일 타임)</td></tr>
+<tr><td>패턴 매칭</td><td>X</td><td>match/if let으로 추출</td></tr></table>` },
+      { type: "keypoint", html: `<ul><li>Rust에 null 없음 → <code>Option&lt;T&gt;</code> = <code>Some(값)</code> 또는 <code>None</code></li><li>Option을 쓰면 None 처리를 컴파일러가 강제</li><li>Java Optional과 같은 개념이지만, Rust는 강제 + 제로 코스트</li><li>null의 "10억 달러 실수"를 타입 시스템으로 해결</li></ul>` }
+    ],
+    quiz: {
+      question: "Rust에서 값이 없을 수 있는 상황을 표현하는 방법은?",
+      options: [ "null 사용", "<code>Option&lt;T&gt;</code>의 <code>None</code>", "undefined", "nullptr" ],
+      answer: 1,
+      explanation: "Rust에는 null이 없어요! Option<T>의 None으로 표현하고, 컴파일러가 None 처리를 강제해요."
+    }
+  },
+  {
+    title: "4. if let — match의 간편 버전",
+    steps: [
+      { type: "teacher", html: `<p>match에서 하나의 패턴만 관심 있을 때, <code>if let</code>이 더 깔끔해요.</p>
+<pre><code class="language-rust">let msg = Some("hello");
+
+// match — 좀 길다
+match msg {
+    Some(text) => println!("{text}"),
+    None => {}
+}
+
+// if let — 간결!
+if let Some(text) = msg {
+    println!("{text}");
+}</code></pre>
+<p><code>if let 패턴 = 값</code> — "이 값이 이 패턴에 맞으면 실행해"라는 뜻이에요. <code>else</code>도 붙일 수 있어요.</p>
+<pre><code class="language-rust">if let Some(text) = msg {
+    println!("있음: {text}");
+} else {
+    println!("없음");
+}</code></pre>` },
+      { type: "student", html: `<p>match랑 if let 중에 언제 뭘 써야 해?</p>` },
+      { type: "teacher", html: `<p>간단한 기준:</p>
+<ul><li><strong>경우가 2-3개 이상</strong> → <code>match</code> (전부 다루니까 안전)</li>
+<li><strong>하나만 확인</strong> → <code>if let</code> (간결)</li>
+<li><strong>모든 경우를 빠짐없이 다뤄야 할 때</strong> → 반드시 <code>match</code></li></ul>` },
+      { type: "keypoint", html: `<ul><li><code>if let 패턴 = 값</code> — 하나의 패턴만 확인할 때 간결한 문법</li><li>match의 축약 버전, else도 가능</li><li>여러 경우 → match, 하나만 → if let</li></ul>` },
+      { type: "drag-fill", config: {
+        title: "드래그 채우기: if let 패턴",
+        description: "Option 값에서 Some일 때만 값을 꺼내는 if let 문을 완성하세요.",
+        template: `let score: Option<u32> = Some(95);
+__0__ __1__(val) = score {
+    println!("점수: {val}");
+}`,
+        blanks: [ { id: 0, answer: "if" }, { id: 1, answer: "let Some" } ],
+        candidates: ["if", "match", "let Some", "let None", "Some"],
+        successMsg: "if let Some(val) = score — Some일 때만 val을 꺼내서 사용해요!"
+      }}
+    ],
+    quiz: {
+      question: "if let을 쓰기 적합한 상황은?",
+      options: [
+        "모든 enum 변형을 다뤄야 할 때",
+        "하나의 패턴만 확인할 때",
+        "여러 조건을 동시에 검사할 때",
+        "반복문 안에서만"
+      ],
+      answer: 1,
+      explanation: "if let은 하나의 패턴만 확인할 때 간결해요. 여러 경우를 다뤄야 하면 match!"
+    }
+  },
+  {
+    title: "5. 실전 패턴 — enum으로 상태 표현하기",
+    steps: [
+      { type: "teacher", html: `<p>enum의 진짜 위력은 <strong>상태를 타입으로 표현</strong>할 때 나와요.</p>
+<pre><code class="language-rust">enum HttpStatus {
+    Ok(String),                   // 200 — 응답 본문
+    NotFound,                     // 404
+    ServerError { code: u16, msg: String },  // 500 — 에러 정보
+}
+
+fn handle_response(status: HttpStatus) {
+    match status {
+        HttpStatus::Ok(body) => println!("성공: {body}"),
+        HttpStatus::NotFound => println!("404 Not Found"),
+        HttpStatus::ServerError { code, msg } => {
+            println!("서버 에러 {code}: {msg}");
+        }
+    }
+}</code></pre>
+<p>각 상태마다 <strong>필요한 데이터가 다르잖아요?</strong> enum으로 이걸 하나의 타입에 안전하게 담을 수 있어요.</p>` },
+      { type: "student", html: `<p>ch09에서 배울 Result도 이런 거야?</p>` },
+      { type: "teacher", html: `<p>날카로워요! <code>Result</code>는 사실 이렇게 생긴 enum이에요:</p>
+<pre><code class="language-rust">enum Result&lt;T, E&gt; {
+    Ok(T),    // 성공 — 결과값
+    Err(E),   // 실패 — 에러 정보
+}</code></pre>
+<p>Rust의 에러 처리 전체가 enum + match 위에 만들어진 거예요. ch09에서 자세히 다룰 거예요.</p>` },
+      { type: "student", html: `<p>Option에도 편한 메서드가 있어?</p>` },
+      { type: "teacher", html: `<p>많아요! 자주 쓰는 것들:</p>
+<pre><code class="language-rust">let x: Option&lt;i32&gt; = Some(5);
+
+x.unwrap();          // Some이면 값 꺼냄, None이면 panic!
+x.unwrap_or(0);      // Some이면 값, None이면 기본값 0
+x.is_some();         // true
+x.is_none();         // false
+x.map(|v| v * 2);    // Some(10) — 안의 값을 변환</code></pre>
+<p><code>unwrap()</code>은 <strong>프로토타이핑에만</strong> 쓰세요. 프로덕션 코드에서는 match나 <code>unwrap_or</code>를 쓰는 게 안전해요.</p>` },
+      { type: "keypoint", html: `<ul><li>enum으로 상태별로 다른 데이터를 하나의 타입에 담기</li><li><code>Result&lt;T, E&gt;</code>도 enum — Rust 에러 처리의 기반</li><li>Option 유용한 메서드: <code>unwrap_or</code>, <code>map</code>, <code>is_some</code></li><li><code>unwrap()</code>은 프로토타이핑에만 (프로덕션에서는 위험)</li></ul>` },
+      { type: "match", config: {
+        title: "매칭 게임: Option 메서드",
+        pairs: [
+          { left: "값 꺼내기 (None이면 panic)", right: "unwrap()" },
+          { left: "값 꺼내기 (None이면 기본값)", right: "unwrap_or(기본값)" },
+          { left: "값이 있는지 확인", right: "is_some()" },
+          { left: "안의 값을 변환", right: "map(|v| ...)" }
+        ]
+      }}
+    ],
+    quiz: {
+      question: "unwrap()을 프로덕션 코드에서 지양하는 이유는?",
+      options: [
+        "성능이 나빠서",
+        "None일 때 panic이 발생해서",
+        "타입 변환이 일어나서",
+        "컴파일이 안 돼서"
+      ],
+      answer: 1,
+      explanation: "unwrap()은 None일 때 panic! — 프로그램이 죽어요. 프로덕션에서는 match나 unwrap_or를 쓰세요."
+    }
+  },
+  {
+    title: "6. Ch07 총정리",
+    steps: [
+      { type: "teacher", html: `<p>총정리해볼게요:</p>
+<table><tr><th>개념</th><th>한 줄 요약</th></tr>
+<tr><td><code>enum</code></td><td>변형(variant)별로 다른 데이터를 품는 타입</td></tr>
+<tr><td><code>match</code></td><td>모든 경우를 빠짐없이 처리 (exhaustive)</td></tr>
+<tr><td><code>_</code></td><td>와일드카드 — 나머지 전부</td></tr>
+<tr><td><code>Option&lt;T&gt;</code></td><td><code>Some(값)</code> 또는 <code>None</code> — null 대체</td></tr>
+<tr><td><code>if let</code></td><td>match의 간편 버전 (하나만 확인)</td></tr>
+<tr><td><code>Result&lt;T, E&gt;</code></td><td><code>Ok(값)</code> 또는 <code>Err(에러)</code> — 에러 처리 기반</td></tr></table>` },
+      { type: "flashcard", config: {
+        title: "최종 복습 플래시카드",
+        cards: [
+          { front: "Rust enum이 C++ enum과<br>다른 점은?", back: "각 variant에 서로 다른 데이터를<br>넣을 수 있어요 (tagged union)" },
+          { front: "match의 핵심 특징은?", back: "모든 경우를 빠짐없이 다뤄야 함<br>(exhaustive) → 빠뜨림 방지" },
+          { front: "Rust에서 null 대신<br>무엇을 쓰나?", back: "<code>Option&lt;T&gt;</code> = <code>Some(값)</code> 또는 <code>None</code><br>컴파일러가 None 처리를 강제" },
+          { front: "if let은 언제 쓰나?", back: "하나의 패턴만 확인할 때<br>match의 간편 버전" },
+          { front: "<code>Result&lt;T, E&gt;</code>는?", back: "<code>Ok(T)</code> 또는 <code>Err(E)</code><br>Rust 에러 처리의 기반이 되는 enum" }
+        ]
+      }},
+      { type: "keypoint", html: `<ul><li>Rust 설계 철학: null을 타입 시스템으로 대체</li><li>match의 exhaustive 검사로 빠뜨림을 컴파일 타임에 잡는다</li><li>모든 것이 "컴파일 타임에 잡자"로 연결</li></ul>` }
+    ],
+    quiz: {
+      question: "Rust 설계 철학과 가장 관련 깊은 것은?",
+      options: [
+        "런타임에 에러를 잡는다",
+        "null을 타입 시스템으로 대체하고 컴파일 타임에 잡는다",
+        "예외(exception)를 사용한다",
+        "가비지 컬렉터로 메모리를 관리한다"
+      ],
+      answer: 1,
+      explanation: "Rust는 null 대신 Option, 예외 대신 Result를 쓰고, 컴파일 타임에 최대한 잡는 철학이에요."
+    }
+  }
+];
+
+const STORAGE_KEY = "ch07_progress";
+let state = loadState();
+function loadState() { try { const s = localStorage.getItem(STORAGE_KEY); if (s) return JSON.parse(s); } catch {} return { sectionIdx: 0, stepIdx: -1, quizPassed: [] }; }
+function saveState() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {} }
+const chat = document.getElementById("chat"), btnPrev = document.getElementById("btnPrev"), btnNext = document.getElementById("btnNext"), progressFill = document.getElementById("progressFill"), progressLabel = document.getElementById("progressLabel"), stepIndicator = document.getElementById("stepIndicator"), mainArea = document.getElementById("mainArea");
+function renderBubble(step) { const d = document.createElement("div"); if (step.type==="teacher"||step.type==="student") { d.className=`bubble ${step.type}`; d.innerHTML=`<div class="role">${step.type==="teacher"?"선생님":"학생"}</div>${step.html}`; } else if (step.type==="keypoint") { d.className="keypoint"; d.innerHTML=`<div class="keypoint-title">핵심 정리</div>${step.html}`; } return d; }
+function renderSectionDivider(t) { const d=document.createElement("div"); d.className="section-divider"; d.innerHTML=`<span>${t}</span>`; return d; }
+function renderQuiz(q,si) { const d=document.createElement("div"); d.className="quiz-card"; d.innerHTML=`<h3>퀴즈</h3><p style="margin-bottom:12px;">${q.question}</p>`+q.options.map((o,i)=>`<button class="quiz-option" data-idx="${i}">${o}</button>`).join("")+`<div class="quiz-feedback" id="qf-${si}"></div>`; return d; }
+function renderFlashcard(config) { const d=document.createElement("div"); d.className="flashcard-container"; d.innerHTML=`<div style="font-size:0.85rem;font-weight:700;color:var(--primary);margin-bottom:10px;text-align:center;">${config.title}</div><div class="flashcard" id="fc-active"><div class="flashcard-face flashcard-front"><div class="flashcard-label">질문</div><div class="flashcard-content" id="fc-front-content"></div><div class="flashcard-hint">클릭해서 뒤집기</div></div><div class="flashcard-face flashcard-back"><div class="flashcard-label">정답</div><div class="flashcard-content" id="fc-back-content"></div><div class="flashcard-hint">클릭해서 돌아가기</div></div></div><div class="flashcard-nav"><button id="fc-prev-btn">이전</button><button id="fc-next-btn">다음</button></div><div class="flashcard-counter" id="fc-counter"></div>`; requestAnimationFrame(()=>{ const cards=config.cards; let idx=0; const fc=d.querySelector("#fc-active"),frontC=d.querySelector("#fc-front-content"),backC=d.querySelector("#fc-back-content"),counter=d.querySelector("#fc-counter"),prevB=d.querySelector("#fc-prev-btn"),nextB=d.querySelector("#fc-next-btn"); function show(){fc.classList.remove("flipped");frontC.innerHTML=cards[idx].front;backC.innerHTML=cards[idx].back;counter.textContent=`${idx+1} / ${cards.length}`;fc.style.minHeight=Math.max(Math.max(frontC.scrollHeight,backC.scrollHeight,100)+80,160)+"px";} fc.addEventListener("click",()=>fc.classList.toggle("flipped")); prevB.addEventListener("click",e=>{e.stopPropagation();if(idx>0){idx--;show();}}); nextB.addEventListener("click",e=>{e.stopPropagation();if(idx<cards.length-1){idx++;show();}}); show(); }); return d; }
+function renderMatch(config) { const d=document.createElement("div"); d.className="match-card"; const shuffled=[...config.pairs.map(p=>p.right)].sort(()=>Math.random()-0.5); d.innerHTML=`<h3>${config.title}</h3><p style="font-size:0.83rem;margin-bottom:12px;">왼쪽을 선택한 뒤, 매칭되는 오른쪽을 클릭하세요.</p><div class="match-columns"><div class="match-col"><div class="match-col-label">항목</div>${config.pairs.map((p,i)=>`<div class="match-item match-left" data-idx="${i}">${p.left}</div>`).join("")}</div><div class="match-col"><div class="match-col-label">답</div>${shuffled.map(r=>`<div class="match-item match-right" data-val="${r}">${r}</div>`).join("")}</div></div><div class="match-feedback"></div>`; requestAnimationFrame(()=>{ let sel=null,mc=0; const ls=d.querySelectorAll(".match-left"),rs=d.querySelectorAll(".match-right"),fb=d.querySelector(".match-feedback"); ls.forEach(el=>{el.addEventListener("click",()=>{if(el.classList.contains("matched"))return;ls.forEach(l=>l.classList.remove("selected"));el.classList.add("selected");sel=el;});}); rs.forEach(el=>{el.addEventListener("click",()=>{if(!sel||el.classList.contains("matched"))return;const li=parseInt(sel.dataset.idx);if(el.dataset.val===config.pairs[li].right){sel.classList.remove("selected");sel.classList.add("matched");el.classList.add("matched");mc++;sel=null;if(mc===config.pairs.length){fb.className="match-feedback show correct";fb.textContent="모두 맞았어요!";}}else{el.classList.add("wrong-flash");setTimeout(()=>el.classList.remove("wrong-flash"),400);}});}); }); return d; }
+function renderCompileCheck(config) { const d=document.createElement("div"); d.className="compile-check-card"; d.innerHTML=`<h3>${config.title}</h3>`+config.items.map((item,i)=>{const ce=item.code.replace(/</g,'&lt;').replace(/>/g,'&gt;');return `<div class="cc-item" data-idx="${i}"><pre><code class="language-rust">${ce}</code></pre><div class="cc-buttons"><button class="cc-btn btn-ok" data-choice="ok">컴파일 OK</button><button class="cc-btn btn-err" data-choice="err">컴파일 에러</button></div><div class="cc-explain"></div></div>`;}).join("")+`<div class="cc-score"></div>`; requestAnimationFrame(()=>{ let ans=0,cor=0;const tot=config.items.length,scoreEl=d.querySelector(".cc-score"); config.items.forEach((item,i)=>{const ci=d.querySelectorAll(".cc-item")[i],btns=ci.querySelectorAll(".cc-btn"),exp=ci.querySelector(".cc-explain"); btns.forEach(btn=>{btn.addEventListener("click",()=>{const ch=btn.dataset.choice,ok=(ch==="ok")===item.compiles;btns.forEach(b=>b.disabled=true);if(ok){btn.classList.add("chosen-correct");exp.className="cc-explain show correct";exp.textContent="정답! "+item.explain;cor++;}else{btn.classList.add("chosen-wrong");(item.compiles?ci.querySelector(".btn-ok"):ci.querySelector(".btn-err")).classList.add("chosen-correct");exp.className="cc-explain show wrong";exp.textContent="오답! "+item.explain;}ci.classList.add("resolved");ans++;if(ans===tot){scoreEl.className="cc-score show";scoreEl.textContent=`결과: ${tot}문제 중 ${cor}문제 정답!`+(cor===tot?" 완벽해요!":"");}});}); }); d.querySelectorAll("pre code.language-rust").forEach(el=>hljs.highlightElement(el)); }); return d; }
+function renderDragFill(config) { const d=document.createElement("div"); d.className="drag-fill-card"; const am={}; config.blanks.forEach(b=>{am[b.id]=b.answer;}); let ch=config.template; config.blanks.forEach(b=>{ch=ch.replace(`__${b.id}__`,`<span class="drag-slot" data-id="${b.id}" data-filled=""></span>`);}); d.innerHTML=`<h3>${config.title}</h3><p style="font-size:0.85rem;margin-bottom:10px;">${config.description}</p><div class="drag-candidates">${config.candidates.map((c,i)=>`<span class="drag-chip" draggable="true" data-val="${i}">${c}</span>`).join("")}</div><pre><code>${ch}</code></pre><button class="fill-check-btn">확인</button><div class="fill-feedback"></div>`; requestAnimationFrame(()=>{ const chips=d.querySelectorAll(".drag-chip"),slots=d.querySelectorAll(".drag-slot"),checkBtn=d.querySelector(".fill-check-btn"),fb=d.querySelector(".fill-feedback"); let dc=null; chips.forEach(chip=>{chip.addEventListener("dragstart",e=>{if(chip.classList.contains("used")){e.preventDefault();return;}dc=chip;chip.classList.add("dragging");e.dataTransfer.effectAllowed="move";});chip.addEventListener("dragend",()=>{chip.classList.remove("dragging");dc=null;});chip.addEventListener("click",()=>{if(chip.classList.contains("used"))return;chips.forEach(c=>c.classList.remove("dragging"));if(dc===chip){dc=null;return;}dc=chip;chip.classList.add("dragging");});}); slots.forEach(slot=>{slot.addEventListener("dragover",e=>{e.preventDefault();slot.classList.add("dragover");});slot.addEventListener("dragleave",()=>slot.classList.remove("dragover"));slot.addEventListener("drop",e=>{e.preventDefault();slot.classList.remove("dragover");if(dc)placeChip(slot,dc);});slot.addEventListener("click",()=>{if(dc){placeChip(slot,dc);}else if(slot.dataset.filled!==""){const ci=slot.dataset.filled,chip=d.querySelector(`.drag-chip[data-val="${ci}"]`);if(chip)chip.classList.remove("used");slot.textContent="";slot.dataset.filled="";slot.classList.remove("filled","correct","wrong");}});}); function placeChip(slot,chip){if(slot.dataset.filled!==""){const oi=slot.dataset.filled,oc=d.querySelector(`.drag-chip[data-val="${oi}"]`);if(oc)oc.classList.remove("used");}slot.textContent=chip.textContent;slot.dataset.filled=chip.dataset.val;slot.classList.add("filled");slot.classList.remove("correct","wrong");chip.classList.remove("dragging");chip.classList.add("used");dc=null;} checkBtn.addEventListener("click",()=>{let ac=true,af=true;slots.forEach(slot=>{const id=slot.dataset.id,ans=am[id],val=slot.textContent.trim();if(!val){af=false;ac=false;return;}if(val===ans){slot.classList.remove("wrong");slot.classList.add("correct");}else{slot.classList.remove("correct");slot.classList.add("wrong");ac=false;}});if(!af){fb.className="fill-feedback show wrong";fb.textContent="빈칸을 모두 채워주세요!";}else if(ac){fb.className="fill-feedback show correct";fb.textContent="정답! "+config.successMsg;checkBtn.disabled=true;}else{fb.className="fill-feedback show wrong";fb.textContent="틀린 칸이 있어요. 빈칸을 클릭해서 빼고 다시 넣어보세요!";}}); }); return d; }
+function renderStep(step) { if(step.type==="flashcard")return renderFlashcard(step.config); if(step.type==="drag-fill")return renderDragFill(step.config); if(step.type==="match")return renderMatch(step.config); if(step.type==="compile-check")return renderCompileCheck(step.config); return renderBubble(step); }
+function renderCompletion() { const d=document.createElement("div"); d.className="completion"; d.innerHTML=`<h2>학습 완료!</h2><p>Ch07 열거형과 패턴 매칭 튜토리얼을 모두 마쳤습니다.</p><table class="summary-table"><tr><th>개념</th><th>한 줄 요약</th></tr><tr><td>enum</td><td>변형별로 다른 데이터를 품는 타입</td></tr><tr><td>match</td><td>모든 경우를 빠짐없이 처리</td></tr><tr><td>_</td><td>와일드카드 — 나머지 전부</td></tr><tr><td>Option&lt;T&gt;</td><td>Some(값) 또는 None — null 대체</td></tr><tr><td>if let</td><td>match의 간편 버전</td></tr><tr><td>Result&lt;T, E&gt;</td><td>Ok(값) 또는 Err(에러)</td></tr></table><p style="margin-top:16px;font-size:0.9rem;">다음: <strong>Ch08 컬렉션</strong></p><button class="restart-btn" onclick="restart()">처음부터 다시</button>`; return d; }
+function makeInstant(el){el.style.animation="none";el.style.opacity="1";el.style.transform="none";}
+function isQuizStep(){return state.stepIdx>=SECTIONS[state.sectionIdx].steps.length;}
+function isCompleted(){return state.sectionIdx>=SECTIONS.length;}
+function quizLocked(){return isQuizStep()&&!state.quizPassed.includes(state.sectionIdx);}
+function rebuildChat() { chat.innerHTML=""; for(let s=0;s<state.sectionIdx;s++){const sec=SECTIONS[s];const dv=renderSectionDivider(sec.title);makeInstant(dv);chat.appendChild(dv);sec.steps.forEach(step=>{const el=renderStep(step);makeInstant(el);chat.appendChild(el);});const note=document.createElement("div");note.className="keypoint";makeInstant(note);note.innerHTML=`<div class="keypoint-title">퀴즈 통과!</div><p>${sec.quiz.explanation}</p>`;chat.appendChild(note);} if(isCompleted()){chat.appendChild(renderCompletion());updateUI();scrollToBottom();return;} const sec=SECTIONS[state.sectionIdx];const dv=renderSectionDivider(sec.title);makeInstant(dv);chat.appendChild(dv);const sc=Math.min(state.stepIdx+1,sec.steps.length);for(let i=0;i<sc;i++){const el=renderStep(sec.steps[i]);if(i<sc-1)makeInstant(el);chat.appendChild(el);}if(isQuizStep()){const qEl=renderQuiz(sec.quiz,state.sectionIdx);chat.appendChild(qEl);if(state.quizPassed.includes(state.sectionIdx))markQuizPassed(qEl,sec.quiz);else bindQuiz(qEl,sec.quiz,state.sectionIdx);}chat.querySelectorAll("pre code.language-rust").forEach(el=>hljs.highlightElement(el));updateUI();scrollToBottom(); }
+function bindQuiz(c,q,si){const bs=c.querySelectorAll(".quiz-option"),fb=c.querySelector(".quiz-feedback");bs.forEach(b=>{b.addEventListener("click",()=>{const idx=parseInt(b.dataset.idx);if(idx===q.answer){b.classList.add("correct");fb.className="quiz-feedback show correct";fb.innerHTML="정답! "+q.explanation;bs.forEach(x=>x.disabled=true);if(!state.quizPassed.includes(si)){state.quizPassed.push(si);saveState();}updateUI();}else{b.classList.add("wrong");b.disabled=true;fb.className="quiz-feedback show wrong";fb.textContent="틀렸어요. 다시 골라보세요!";}});});}
+function markQuizPassed(c,q){const bs=c.querySelectorAll(".quiz-option"),fb=c.querySelector(".quiz-feedback");bs.forEach(b=>{if(parseInt(b.dataset.idx)===q.answer)b.classList.add("correct");b.disabled=true;});fb.className="quiz-feedback show correct";fb.innerHTML="정답! "+q.explanation;}
+function next(){if(isCompleted()||quizLocked())return;const sec=SECTIONS[state.sectionIdx];if(state.stepIdx<sec.steps.length){state.stepIdx++;saveState();rebuildChat();}else if(state.quizPassed.includes(state.sectionIdx)){state.sectionIdx++;state.stepIdx=-1;saveState();if(isCompleted())rebuildChat();else next();}}
+function prev(){if(state.stepIdx>0){state.stepIdx--;saveState();rebuildChat();}else if(state.sectionIdx>0){state.sectionIdx--;state.stepIdx=SECTIONS[state.sectionIdx].steps.length;saveState();rebuildChat();}}
+function restart(){state={sectionIdx:0,stepIdx:-1,quizPassed:[]};saveState();next();}
+function updateUI(){const done=isCompleted(),total=SECTIONS.length;progressFill.style.width=(done?100:(state.sectionIdx/total)*100)+"%";progressLabel.textContent=done?"완료!":`${state.sectionIdx+1} / ${total}`;btnPrev.disabled=(state.sectionIdx===0&&state.stepIdx<=0);if(done){btnNext.disabled=true;stepIndicator.textContent="";}else if(quizLocked()){btnNext.disabled=true;stepIndicator.textContent="퀴즈를 풀어주세요";}else{btnNext.disabled=false;const t=SECTIONS[state.sectionIdx].steps.length+1;stepIndicator.textContent=`${Math.min(state.stepIdx+1,t)} / ${t}`;}}
+function scrollToBottom(){requestAnimationFrame(()=>{mainArea.scrollTop=mainArea.scrollHeight;});}
+btnNext.addEventListener("click",next);btnPrev.addEventListener("click",prev);
+document.getElementById("btnReset").addEventListener("click",()=>{if(confirm("진행 상태를 초기화하고 처음부터 시작할까요?"))restart();});
+document.addEventListener("keydown",e=>{const tag=document.activeElement?.tagName;if(tag==="INPUT"||tag==="BUTTON")return;if(e.key==="Enter"||e.key==="ArrowRight")next();if(e.key==="ArrowLeft")prev();});
+if(state.stepIdx===-1&&state.sectionIdx===0)next();else rebuildChat();
+</script>
+</body>
+</html>

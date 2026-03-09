@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ch05: 소유권 — 대화형 튜토리얼</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --teacher-bg: #e3f2fd; --student-bg: #e8f5e9; --keypoint-bg: #fff8e1;
+    --keypoint-border: #ffb300; --quiz-bg: #f3e5f5; --primary: #1565c0;
+    --success: #2e7d32; --danger: #c62828; --text: #212121;
+    --text-light: #757575; --bg: #fafafa; --header-h: 56px; --footer-h: 64px;
+  }
+  body { font-family: 'Segoe UI',-apple-system,BlinkMacSystemFont,sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; display: flex; flex-direction: column; min-height: 100vh; }
+  header { position: sticky; top: 0; z-index: 100; background: var(--primary); color: #fff; height: var(--header-h); display: flex; align-items: center; padding: 0 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+  header h1 { font-size: 1.1rem; font-weight: 600; flex: 1; white-space: nowrap; }
+  .reset-btn { background: none; border: 1px solid rgba(255,255,255,0.5); color: rgba(255,255,255,0.85); padding: 3px 10px; border-radius: 4px; font-size: 0.72rem; cursor: pointer; font-family: inherit; margin-right: 12px; transition: all 0.2s; }
+  .reset-btn:hover { background: rgba(255,255,255,0.15); border-color: #fff; color: #fff; }
+  .progress-wrapper { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; }
+  .progress-bar { width: 120px; height: 6px; background: rgba(255,255,255,0.3); border-radius: 3px; overflow: hidden; }
+  .progress-fill { height: 100%; background: #fff; border-radius: 3px; transition: width 0.4s ease; }
+  main { flex: 1; overflow-y: auto; padding: 20px 16px; padding-bottom: calc(var(--footer-h) + 20px); }
+  .chat-container { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
+  .bubble { max-width: 85%; padding: 14px 18px; border-radius: 18px; font-size: 0.95rem; opacity: 0; transform: translateY(20px); animation: slideUp 0.35s ease forwards; word-break: keep-all; overflow-wrap: break-word; }
+  @keyframes slideUp { to { opacity: 1; transform: translateY(0); } }
+  .bubble.teacher { align-self: flex-start; background: var(--teacher-bg); border-bottom-left-radius: 4px; }
+  .bubble.student { align-self: flex-end; background: var(--student-bg); border-bottom-right-radius: 4px; }
+  .bubble .role { font-size: 0.75rem; font-weight: 700; margin-bottom: 4px; }
+  .bubble.teacher .role { color: var(--primary); }
+  .bubble.student .role { color: var(--success); }
+  .bubble p { margin: 6px 0; } .bubble p:first-of-type { margin-top: 0; }
+  .bubble strong { font-weight: 600; }
+  .bubble code { background: rgba(0,0,0,0.07); padding: 1px 5px; border-radius: 3px; font-size: 0.88em; font-family: 'Cascadia Code','Fira Code',Consolas,monospace; }
+  .bubble pre { margin: 10px -8px; border-radius: 8px; overflow-x: auto; }
+  .bubble pre code { background: none; padding: 14px 16px; display: block; font-size: 0.85em; line-height: 1.5; }
+  .bubble ul, .bubble ol { padding-left: 20px; margin: 6px 0; } .bubble li { margin: 3px 0; }
+  .bubble table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 0.88rem; }
+  .bubble th, .bubble td { padding: 6px 10px; border: 1px solid rgba(0,0,0,0.12); text-align: left; }
+  .bubble th { background: rgba(0,0,0,0.06); font-weight: 600; }
+  .keypoint { max-width: 85%; align-self: center; background: var(--keypoint-bg); border-left: 4px solid var(--keypoint-border); border-radius: 8px; padding: 14px 18px; font-size: 0.9rem; opacity: 0; transform: translateY(20px); animation: slideUp 0.35s ease forwards; }
+  .keypoint-title { font-weight: 700; color: #e65100; margin-bottom: 6px; font-size: 0.85rem; }
+  .keypoint ul { padding-left: 18px; margin: 4px 0; } .keypoint li { margin: 3px 0; }
+  .keypoint code { background: rgba(0,0,0,0.06); padding: 1px 4px; border-radius: 3px; font-family: 'Cascadia Code','Fira Code',Consolas,monospace; font-size: 0.88em; }
+  .quiz-card { max-width: 85%; align-self: center; background: var(--quiz-bg); border-radius: 16px; padding: 20px 22px; opacity: 0; transform: translateY(20px); animation: slideUp 0.35s ease forwards; }
+  .quiz-card h3 { font-size: 0.95rem; margin-bottom: 14px; color: #6a1b9a; }
+  .quiz-option { display: block; width: 100%; text-align: left; padding: 10px 14px; margin: 6px 0; border: 2px solid #ce93d8; border-radius: 10px; background: #fff; cursor: pointer; font-size: 0.9rem; font-family: inherit; transition: all 0.2s; }
+  .quiz-option:hover:not(:disabled) { background: #f3e5f5; border-color: #ab47bc; }
+  .quiz-option:disabled { cursor: default; }
+  .quiz-option.correct { background: #c8e6c9; border-color: var(--success); color: var(--success); font-weight: 600; }
+  .quiz-option.wrong { background: #ffcdd2; border-color: var(--danger); color: var(--danger); }
+  .quiz-option code { font-family: 'Cascadia Code','Fira Code',Consolas,monospace; font-size: 0.88em; }
+  .quiz-feedback { margin-top: 12px; padding: 10px 14px; border-radius: 8px; font-size: 0.88rem; display: none; }
+  .quiz-feedback.show { display: block; } .quiz-feedback.correct { background: #c8e6c9; color: #1b5e20; } .quiz-feedback.wrong { background: #ffcdd2; color: #b71c1c; }
+  .section-divider { text-align: center; padding: 20px 0 10px; opacity: 0; animation: slideUp 0.35s ease forwards; }
+  .section-divider span { display: inline-block; background: var(--primary); color: #fff; padding: 6px 18px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; }
+  .flashcard-container { max-width: 85%; align-self: center; perspective: 800px; opacity: 0; transform: translateY(20px); animation: slideUp 0.35s ease forwards; }
+  .flashcard { width: 100%; min-height: 160px; cursor: pointer; position: relative; transform-style: preserve-3d; transition: transform 0.5s ease; border-radius: 14px; }
+  .flashcard.flipped { transform: rotateY(180deg); }
+  .flashcard-face { position: absolute; top: 0; left: 0; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px 24px; text-align: center; font-size: 0.92rem; }
+  .flashcard-front { background: linear-gradient(135deg, #e3f2fd, #bbdefb); border: 2px solid #90caf9; }
+  .flashcard-back { background: linear-gradient(135deg, #e8f5e9, #c8e6c9); border: 2px solid #81c784; transform: rotateY(180deg); }
+  .flashcard-label { font-size: 0.72rem; font-weight: 700; color: var(--text-light); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+  .flashcard-content { font-size: 1rem; line-height: 1.5; }
+  .flashcard-content code { background: rgba(0,0,0,0.08); padding: 1px 5px; border-radius: 3px; font-family: 'Cascadia Code','Fira Code',Consolas,monospace; font-size: 0.9em; }
+  .flashcard-hint { font-size: 0.75rem; color: var(--text-light); margin-top: 10px; }
+  .flashcard-nav { display: flex; justify-content: center; gap: 8px; margin-top: 10px; }
+  .flashcard-nav button { padding: 5px 14px; border: 1px solid #90caf9; border-radius: 6px; background: #fff; cursor: pointer; font-size: 0.8rem; font-family: inherit; }
+  .flashcard-nav button:hover { background: #e3f2fd; }
+  .flashcard-counter { font-size: 0.75rem; color: var(--text-light); text-align: center; margin-top: 6px; }
+  .match-card { max-width: 85%; align-self: center; background: #fce4ec; border-radius: 14px; padding: 20px 22px; opacity: 0; transform: translateY(20px); animation: slideUp 0.35s ease forwards; }
+  .match-card h3 { font-size: 0.9rem; color: #880e4f; margin-bottom: 14px; }
+  .match-columns { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+  .match-col { display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 140px; }
+  .match-col-label { font-size: 0.75rem; font-weight: 700; color: var(--text-light); text-align: center; margin-bottom: 4px; }
+  .match-item { padding: 10px 14px; border-radius: 10px; text-align: center; font-size: 0.88rem; cursor: pointer; transition: all 0.2s; user-select: none; font-family: inherit; }
+  .match-left { background: #fff; border: 2px solid #f48fb1; } .match-left:hover { background: #fce4ec; }
+  .match-left.selected { background: #f48fb1; color: #fff; border-color: #e91e63; }
+  .match-left.matched { background: #c8e6c9; border-color: var(--success); color: var(--success); cursor: default; }
+  .match-right { background: #fff; border: 2px solid #ce93d8; } .match-right:hover { background: #f3e5f5; }
+  .match-right.matched { background: #c8e6c9; border-color: var(--success); color: var(--success); cursor: default; }
+  .match-right.wrong-flash { animation: wrongShake 0.4s ease; }
+  @keyframes wrongShake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+  .match-item code { font-family: 'Cascadia Code','Fira Code',Consolas,monospace; font-size: 0.88em; }
+  .match-feedback { margin-top: 12px; padding: 8px 12px; border-radius: 6px; font-size: 0.85rem; text-align: center; display: none; }
+  .match-feedback.show { display: block; } .match-feedback.correct { background: #c8e6c9; color: #1b5e20; }
+  .compile-check-card { max-width: 85%; align-self: center; background: #e0f2f1; border-radius: 14px; padding: 20px 22px; opacity: 0; transform: translateY(20px); animation: slideUp 0.35s ease forwards; }
+  .compile-check-card h3 { font-size: 0.9rem; color: #00695c; margin-bottom: 14px; }
+  .cc-item { background: #fff; border: 2px solid #80cbc4; border-radius: 10px; margin: 10px 0; padding: 12px 14px; transition: all 0.3s; }
+  .cc-item pre { margin: 0 0 10px; border-radius: 6px; overflow-x: auto; }
+  .cc-item pre code { padding: 10px 14px; display: block; font-size: 0.83em; line-height: 1.45; }
+  .cc-buttons { display: flex; gap: 8px; }
+  .cc-btn { flex: 1; padding: 8px; border: 2px solid #b2dfdb; border-radius: 8px; background: #fff; cursor: pointer; font-family: inherit; font-size: 0.85rem; font-weight: 600; transition: all 0.2s; }
+  .cc-btn:hover:not(:disabled) { background: #e0f2f1; } .cc-btn:disabled { cursor: default; opacity: 0.7; }
+  .cc-btn.btn-ok { color: var(--success); } .cc-btn.btn-err { color: var(--danger); }
+  .cc-btn.chosen-correct { background: #c8e6c9; border-color: var(--success); }
+  .cc-btn.chosen-wrong { background: #ffcdd2; border-color: var(--danger); }
+  .cc-item.resolved { border-color: #c8e6c9; }
+  .cc-explain { margin-top: 8px; padding: 8px 12px; border-radius: 6px; font-size: 0.83rem; display: none; }
+  .cc-explain.show { display: block; } .cc-explain.correct { background: #c8e6c9; color: #1b5e20; } .cc-explain.wrong { background: #ffcdd2; color: #b71c1c; }
+  .cc-score { margin-top: 14px; text-align: center; font-size: 0.9rem; font-weight: 700; color: #00695c; display: none; }
+  .cc-score.show { display: block; }
+  .drag-fill-card { max-width: 85%; align-self: center; background: #e8eaf6; border-radius: 14px; padding: 20px 22px; opacity: 0; transform: translateY(20px); animation: slideUp 0.35s ease forwards; }
+  .drag-fill-card h3 { font-size: 0.9rem; color: #283593; margin-bottom: 8px; }
+  .drag-fill-card pre { margin: 8px 0; border-radius: 8px; overflow-x: auto; }
+  .drag-fill-card pre code { padding: 14px 16px; display: block; font-size: 0.85em; line-height: 1.5; }
+  .drag-candidates { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; justify-content: center; }
+  .drag-chip { display: inline-block; padding: 6px 14px; background: #fff; border: 2px solid #7986cb; border-radius: 20px; font-family: 'Cascadia Code','Fira Code',Consolas,monospace; font-size: 0.88em; cursor: grab; user-select: none; transition: all 0.2s; }
+  .drag-chip:hover { background: #c5cae9; } .drag-chip.dragging { opacity: 0.4; }
+  .drag-chip.used { opacity: 0.3; cursor: default; border-style: dashed; }
+  .drag-slot { display: inline-block; min-width: 60px; padding: 3px 10px; margin: 0 2px; border: 2px dashed #7986cb; border-radius: 6px; background: rgba(255,255,255,0.7); font-family: 'Cascadia Code','Fira Code',Consolas,monospace; font-size: 0.88em; text-align: center; min-height: 1.6em; vertical-align: middle; transition: all 0.2s; cursor: pointer; }
+  .drag-slot.dragover { background: #c5cae9; border-color: #3949ab; }
+  .drag-slot.filled { background: #e8eaf6; border-style: solid; border-color: #5c6bc0; }
+  .drag-slot.correct { background: #c8e6c9; border-color: var(--success); border-style: solid; }
+  .drag-slot.wrong { background: #ffcdd2; border-color: var(--danger); border-style: solid; }
+  .fill-check-btn { display: block; margin: 14px auto 0; padding: 8px 24px; background: #3f51b5; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-family: inherit; font-size: 0.88rem; }
+  .fill-check-btn:hover { background: #283593; } .fill-check-btn:disabled { opacity: 0.4; cursor: default; }
+  .fill-feedback { margin-top: 10px; padding: 8px 12px; border-radius: 6px; font-size: 0.85rem; display: none; text-align: center; }
+  .fill-feedback.show { display: block; } .fill-feedback.correct { background: #c8e6c9; color: #1b5e20; } .fill-feedback.wrong { background: #ffcdd2; color: #b71c1c; }
+  .completion { text-align: center; padding: 40px 20px; opacity: 0; animation: slideUp 0.5s ease forwards; }
+  .completion h2 { font-size: 1.5rem; margin-bottom: 12px; color: var(--primary); }
+  .completion p { color: var(--text-light); margin: 6px 0; }
+  .completion .summary-table { margin: 20px auto; border-collapse: collapse; font-size: 0.9rem; }
+  .completion .summary-table th, .completion .summary-table td { padding: 8px 16px; border: 1px solid #e0e0e0; text-align: left; }
+  .completion .summary-table th { background: var(--primary); color: #fff; }
+  .restart-btn { margin-top: 20px; padding: 10px 28px; background: var(--primary); color: #fff; border: none; border-radius: 8px; font-size: 1rem; cursor: pointer; font-family: inherit; }
+  .restart-btn:hover { background: #0d47a1; }
+  footer { position: fixed; bottom: 0; left: 0; right: 0; height: var(--footer-h); background: #fff; border-top: 1px solid #e0e0e0; display: flex; align-items: center; justify-content: center; gap: 16px; padding: 0 20px; z-index: 100; }
+  .nav-btn { padding: 10px 32px; border: none; border-radius: 10px; font-size: 0.95rem; font-weight: 600; cursor: pointer; font-family: inherit; transition: all 0.2s; }
+  .nav-btn:disabled { opacity: 0.4; cursor: default; }
+  .btn-prev { background: #e0e0e0; color: var(--text); } .btn-prev:hover:not(:disabled) { background: #bdbdbd; }
+  .btn-next { background: var(--primary); color: #fff; } .btn-next:hover:not(:disabled) { background: #0d47a1; }
+  .step-indicator { font-size: 0.8rem; color: var(--text-light); min-width: 60px; text-align: center; }
+  @media (max-width: 600px) {
+    header h1 { font-size: 0.95rem; } .progress-bar { width: 80px; }
+    .bubble, .keypoint, .quiz-card, .flashcard-container, .drag-fill-card, .match-card, .compile-check-card { max-width: 92%; font-size: 0.9rem; }
+    .nav-btn { padding: 10px 24px; font-size: 0.9rem; } .match-columns { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Ch05: 소유권</h1>
+  <button class="reset-btn" id="btnReset" title="처음부터 다시 시작">초기화</button>
+  <div class="progress-wrapper">
+    <span id="progressLabel">1 / 6</span>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+  </div>
+</header>
+<main id="mainArea"><div class="chat-container" id="chat"></div></main>
+<footer>
+  <button class="nav-btn btn-prev" id="btnPrev" disabled>이전</button>
+  <span class="step-indicator" id="stepIndicator"></span>
+  <button class="nav-btn btn-next" id="btnNext">다음</button>
+</footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/rust.min.js"></script>
+<script>
+const SECTIONS = [
+  {
+    title: "1. 소유권이란?",
+    steps: [
+      { type: "teacher", html: `<p>Rust에서 모든 값에는 <strong>주인(owner)</strong>이 딱 하나 있어요.</p>
+<pre><code class="language-rust">let s = String::from("hello");  // s가 "hello"의 주인</code></pre>
+<p>규칙은 세 줄이에요:</p>
+<ol><li>모든 값에는 <strong>소유자(owner)</strong>가 있다</li>
+<li>소유자는 <strong>동시에 하나</strong>만 존재한다</li>
+<li>소유자가 스코프를 벗어나면 <strong>값이 자동으로 버려진다(drop)</strong></li></ol>` },
+      { type: "student", html: `<p>그게 C++의 소멸자(destructor)랑 비슷한 거야?</p>` },
+      { type: "teacher", html: `<p>정확해요! C++에서 RAII 패턴으로 소멸자에서 자원 해제하는 거랑 같은 개념이에요. 차이점은 Rust는 <strong>컴파일러가 소유권을 추적</strong>해서, 누가 해제할지 헷갈릴 일이 없다는 거예요.</p>
+<pre><code class="language-rust">{
+    let s = String::from("hello");  // s가 주인
+    println!("{s}");                 // s 사용
+}   // ← 여기서 s가 스코프를 벗어남 → 자동으로 drop</code></pre>
+<p>C++에서는 delete 잊어버리면 메모리 누수, 두 번 하면 double free. Rust에서는 컴파일러가 알아서 딱 한 번 정리해줘요.</p>` },
+      { type: "keypoint", html: `<ul><li>모든 값에는 소유자가 딱 하나</li><li>소유자가 스코프를 벗어나면 자동 drop</li><li>C++의 RAII + 소멸자와 같은 개념이지만, 컴파일러가 강제</li></ul>` }
+    ],
+    quiz: {
+      question: "Rust 소유권 규칙으로 올바른 것은?",
+      options: [
+        "하나의 값에 여러 소유자가 있을 수 있다",
+        "소유자가 스코프를 벗어나면 값이 자동으로 drop된다",
+        "소유권은 런타임에 추적된다",
+        "drop은 개발자가 직접 호출해야 한다"
+      ],
+      answer: 1,
+      explanation: "소유자는 동시에 하나만 존재하고, 스코프를 벗어나면 자동으로 drop됩니다. 이 과정은 컴파일 타임에 결정돼요."
+    }
+  },
+  {
+    title: "2. 이동(Move) — 주인이 바뀐다",
+    steps: [
+      { type: "teacher", html: `<p>변수를 다른 변수에 대입하면 <strong>소유권이 이동</strong>해요.</p>
+<pre><code class="language-rust">let s1 = String::from("hello");
+let s2 = s1;   // 소유권이 s1 → s2로 이동!
+// println!("{s1}");  // 컴파일 에러! s1은 이제 빈 껍데기
+println!("{s2}");     // OK — s2가 새 주인</code></pre>` },
+      { type: "student", html: `<p>왜 복사가 아니라 이동이야? C++에서는 그냥 복사되잖아.</p>` },
+      { type: "teacher", html: `<p><code>String</code>은 힙 메모리를 쓰는 타입이에요. 두 변수가 같은 힙 메모리를 가리키면 위험하잖아요? 둘 다 스코프 끝에서 해제하면 <strong>double free</strong>.</p>
+<pre><code class="language-rust">// 스택         힙
+// s1: [ptr, len, cap] → "hello"
+//
+// let s2 = s1; 이후:
+// s1: (무효화)
+// s2: [ptr, len, cap] → "hello" (같은 힙)</code></pre>
+<p>그래서 Rust는 "이동시키고 원래 주인은 무효화"하는 전략을 택한 거예요.</p>` },
+      { type: "student", html: `<p>그러면 진짜 복사하고 싶으면 어떻게 해?</p>` },
+      { type: "teacher", html: `<p><code>clone()</code>을 명시적으로 호출하면 돼요.</p>
+<pre><code class="language-rust">let s1 = String::from("hello");
+let s2 = s1.clone();   // 힙 데이터까지 전부 복사
+println!("{s1}");       // OK! s1도 여전히 유효
+println!("{s2}");       // OK! 독립적인 복사본</code></pre>
+<p><strong>"비싼 복사는 명시적으로"</strong> — Rust의 철학이에요.</p>` },
+      { type: "keypoint", html: `<ul><li>대입(<code>=</code>)하면 소유권이 <strong>이동(move)</strong> — 원래 변수는 무효</li><li>이유: 같은 힙 메모리를 두 변수가 가리키면 double free 위험</li><li>진짜 복사가 필요하면 <code>clone()</code> 명시 호출</li></ul>` },
+      { type: "compile-check", config: {
+        title: "이 코드, 컴파일 될까? — 이동 편",
+        items: [
+          { code: 'let s1 = String::from("hello");\nlet s2 = s1;\nprintln!("{s1}");', compiles: false,
+            explain: "s1의 소유권이 s2로 이동됐어요. 이동 후 s1은 사용 불가!" },
+          { code: 'let s1 = String::from("hello");\nlet s2 = s1.clone();\nprintln!("{s1} {s2}");', compiles: true,
+            explain: "clone()으로 힙 데이터까지 복사했으니 s1, s2 둘 다 유효해요." },
+          { code: 'let s1 = String::from("hello");\nlet s2 = s1;\nlet s3 = s2;\nprintln!("{s2}");', compiles: false,
+            explain: "s2의 소유권이 s3로 이동됐어요. s2도 이제 사용 불가!" },
+          { code: 'let s = String::from("hello");\nprintln!("{s}");\nlet s2 = s;\nprintln!("{s2}");', compiles: true,
+            explain: "s를 먼저 사용한 뒤 s2로 이동. 이동 후에는 s2만 사용. OK!" }
+        ]
+      }}
+    ],
+    quiz: {
+      question: "다음 중 컴파일이 되는 코드는?",
+      options: [
+        '<code>let s1 = String::from("a"); let s2 = s1; println!("{s1}");</code>',
+        '<code>let s1 = String::from("a"); let s2 = s1; println!("{s2}");</code>',
+        '<code>let s1 = String::from("a"); let s2 = s1; println!("{s1}{s2}");</code>',
+        '<code>let s1 = String::from("a"); println!("{s1}"); let s2 = s1; println!("{s1}");</code>'
+      ],
+      answer: 1,
+      explanation: "s1에서 s2로 소유권이 이동한 뒤에는 s2만 사용 가능. s1을 다시 쓰려는 코드는 전부 에러!"
+    }
+  },
+  {
+    title: "3. Copy 트레이트 — 스택에 사는 타입들",
+    steps: [
+      { type: "teacher", html: `<p>근데 ch02에서 이런 코드 본 적 있죠?</p>
+<pre><code class="language-rust">let x = 5;
+let y = x;    // x가 이동되어야 할 텐데...
+println!("{x}");  // 어? 잘 되네?</code></pre>
+<p>정수, 불리언, char 같은 <strong>스택에만 사는 타입</strong>은 복사해도 비용이 거의 없어요. 그래서 자동으로 복사해줘요.</p>` },
+      { type: "student", html: `<p>어떻게 구분하지? 어떤 타입이 이동이고 어떤 게 복사야?</p>` },
+      { type: "teacher", html: `<p><code>Copy</code> 트레이트를 가진 타입은 자동 복사, 아니면 이동이에요. 규칙이 간단해요: <strong>힙을 쓰면 Move, 스택만 쓰면 Copy.</strong></p>` },
+      { type: "match", config: {
+        title: "매칭 게임: Copy vs Move",
+        pairs: [
+          { left: "i32, bool, char", right: "Copy (자동 복사)" },
+          { left: "String", right: "Move (이동)" },
+          { left: "Vec<T>", right: "Move (이동)" },
+          { left: "(i32, i32) 튜플", right: "Copy (자동 복사)" }
+        ]
+      }},
+      { type: "teacher", html: `<p>C++과 정반대 철학이에요:</p>
+<table><tr><th></th><th>C++</th><th>Rust</th></tr>
+<tr><td>기본 동작</td><td>복사 (copy constructor)</td><td>이동 (move)</td></tr>
+<tr><td>이동하려면</td><td><code>std::move()</code> 명시</td><td>자동</td></tr>
+<tr><td>복사하려면</td><td>자동</td><td><code>clone()</code> 명시</td></tr></table>` },
+      { type: "keypoint", html: `<ul><li><code>Copy</code> 트레이트 = 스택 전용 타입, 자동 복사 (<code>i32</code>, <code>bool</code>, <code>char</code> 등)</li><li>나머지 = 이동(Move). 힙을 쓰는 타입은 대입 시 이동</li><li>C++은 기본 복사, Rust는 기본 이동 — 정반대 철학</li></ul>` }
+    ],
+    quiz: {
+      question: "다음 중 Copy 타입이 아닌 것은?",
+      options: [ "<code>i32</code>", "<code>bool</code>", "<code>String</code>", "<code>char</code>" ],
+      answer: 2,
+      explanation: "String은 힙 메모리를 사용하므로 Copy가 아니라 Move 타입이에요. 대입하면 소유권이 이동됩니다."
+    }
+  },
+  {
+    title: "4. 함수와 소유권",
+    steps: [
+      { type: "teacher", html: `<p>함수에 값을 넘기면 <strong>대입과 똑같이</strong> 소유권이 이동해요.</p>
+<pre><code class="language-rust">fn take_ownership(s: String) {
+    println!("{s}");
+}   // s가 여기서 drop
+
+let name = String::from("철수");
+take_ownership(name);
+// println!("{name}");  // 에러! 소유권은 함수 안으로 이동됨</code></pre>` },
+      { type: "student", html: `<p>함수 호출할 때마다 소유권이 가버리면 불편하지 않아?</p>` },
+      { type: "teacher", html: `<p>맞아요, 그래서 <strong>참조(reference)</strong>를 써요. 소유권을 넘기지 않고 <strong>빌려주는</strong> 거예요.</p>
+<pre><code class="language-rust">fn print_length(s: &String) {  // &String = 참조를 받음
+    println!("길이: {}", s.len());
+}   // s는 참조일 뿐이라 drop 안 됨
+
+let name = String::from("철수");
+print_length(&name);       // &name = 빌려줌
+println!("{name}");        // OK! name은 여전히 주인</code></pre>` },
+      { type: "student", html: `<p>빌린 거로 값을 수정하고 싶으면?</p>` },
+      { type: "teacher", html: `<p><code>&mut</code>으로 <strong>수정 가능한 빌림</strong>을 하면 돼요.</p>
+<pre><code class="language-rust">fn add_suffix(s: &mut String) {
+    s.push_str("님");
+}
+
+let mut name = String::from("철수");
+add_suffix(&mut name);
+println!("{name}");  // "철수님"</code></pre>
+<p>정리: <code>&T</code> = 읽기 빌림, <code>&mut T</code> = 수정 빌림</p>` },
+      { type: "drag-fill", config: {
+        title: "드래그 채우기: 함수와 참조",
+        description: "함수가 String을 빌려서 길이를 반환하는 코드를 완성하세요.",
+        template: `fn get_len(s: __0__) -> usize {
+    s.len()
+}
+let name = String::from("hello");
+let len = get_len(__1__);
+println!("{name}: {len}");`,
+        blanks: [ { id: 0, answer: "&String" }, { id: 1, answer: "&name" } ],
+        candidates: ["&String", "String", "&name", "name", "&mut name"],
+        successMsg: "&String으로 빌림을 받고, &name으로 빌려주면 소유권이 유지돼요!"
+      }},
+      { type: "keypoint", html: `<ul><li>함수 인자 전달 = 대입과 동일 (소유권 이동)</li><li><code>&T</code>: 읽기 빌림 — 소유권 유지, 값 수정 불가</li><li><code>&mut T</code>: 수정 빌림 — 소유권 유지, 값 수정 가능</li></ul>` }
+    ],
+    quiz: {
+      question: "함수에서 값을 수정하려면 매개변수 타입을 어떻게 써야 하나?",
+      options: [ "<code>&String</code>", "<code>&mut String</code>", "<code>String</code>", "<code>*String</code>" ],
+      answer: 1,
+      explanation: "&mut String으로 수정 가능한 참조를 받아야 해요. &String은 읽기 전용, String은 소유권 이동이에요."
+    }
+  },
+  {
+    title: "5. 빌림 규칙 — 컴파일러의 심판",
+    steps: [
+      { type: "teacher", html: `<p>ch04에서 맛보기로 봤던 빌림 규칙, 이제 정식으로 배울게요. 규칙은 딱 두 개예요.</p>
+<p><strong>규칙 1: 읽기 참조(<code>&</code>)는 여러 개 동시 OK</strong></p>
+<pre><code class="language-rust">let s = String::from("hello");
+let r1 = &s;
+let r2 = &s;
+println!("{r1} {r2}");  // OK! 다 읽기니까</code></pre>
+<p><strong>규칙 2: 수정 참조(<code>&mut</code>)는 동시에 딱 하나. 그동안 읽기 참조도 없어야 함</strong></p>
+<pre><code class="language-rust">let mut s = String::from("hello");
+let r = &mut s;
+r.push_str(" world");
+// let r2 = &s;  // 에러! &mut이 살아있는 동안 &도 안 됨
+println!("{r}");</code></pre>` },
+      { type: "student", html: `<p>왜 그렇게 빡빡해?</p>` },
+      { type: "teacher", html: `<p>데이터 경합(data race)을 <strong>원천 차단</strong>하기 위해서예요. 수정하는 놈이 있으면 다른 누구도 동시에 접근 못 하게.</p>` },
+      { type: "student", html: `<p>"살아있다"의 기준이 뭐야?</p>` },
+      { type: "teacher", html: `<p>Rust 컴파일러는 <strong>NLL (Non-Lexical Lifetimes)</strong>을 써요. 참조가 <strong>마지막으로 사용된 지점</strong>까지만 "살아있다"고 판단해요.</p>
+<pre><code class="language-rust">let mut s = String::from("hello");
+let r = &s;
+println!("{r}");        // r의 마지막 사용 ← 여기서 수명 끝
+s.push_str(" world");   // OK! r은 이미 끝남</code></pre>` },
+      { type: "compile-check", config: {
+        title: "이 코드, 컴파일 될까? — 빌림 규칙 편",
+        items: [
+          { code: 'let mut s = String::from("hi");\nlet r = &s;\nprintln!("{r}");\ns.push_str("!");', compiles: true,
+            explain: "r은 println! 이후 안 쓰이니까 수명 끝! 그 뒤에 수정 OK." },
+          { code: 'let mut s = String::from("hi");\nlet r = &s;\ns.push_str("!");\nprintln!("{r}");', compiles: false,
+            explain: "r이 아직 살아있는데(println에서 쓸 예정) 수정하려 해서 에러!" },
+          { code: 'let mut s = String::from("hi");\nlet a = &mut s;\nlet b = &s;\nprintln!("{a} {b}");', compiles: false,
+            explain: "&mut이 살아있는 동안 &도 안 돼요! 수정 중에 읽으면 위험하니까." },
+          { code: 'let mut s = String::from("hi");\nlet a = &mut s;\na.push_str("!");\nprintln!("{s}");', compiles: true,
+            explain: "a는 push_str 이후 안 쓰이니 수명 끝. 그 뒤에 s를 읽는 건 OK!" },
+          { code: 'let s = String::from("hi");\nlet a = &s;\nlet b = &s;\nlet c = &s;\nprintln!("{a} {b} {c}");', compiles: true,
+            explain: "읽기 참조(&)는 여러 개 동시에 OK! 다들 읽기만 하니까 안전." }
+        ]
+      }},
+      { type: "keypoint", html: `<ul><li>규칙 1: <code>&T</code> 여러 개 동시 OK (읽기끼리는 안전)</li><li>규칙 2: <code>&mut T</code>는 독점. 살아있는 동안 다른 참조 불가</li><li>NLL: 참조 수명 = 마지막 사용 지점까지 (스코프 끝이 아님)</li></ul>` }
+    ],
+    quiz: {
+      question: "다음 중 컴파일이 되는 코드는?",
+      options: [
+        '<code>let mut s = String::from("a"); let r = &s; s.push_str("b"); println!("{r}");</code>',
+        '<code>let mut s = String::from("a"); let r = &s; println!("{r}"); s.push_str("b");</code>',
+        '<code>let mut s = String::from("a"); let a = &mut s; let b = &mut s; println!("{a}{b}");</code>',
+        '<code>let s = String::from("a"); s.push_str("b");</code>'
+      ],
+      answer: 1,
+      explanation: "2번은 r을 println에서 마지막으로 쓴 뒤 push_str하므로 OK. 1번은 r이 아직 살아있는데 수정, 3번은 &mut 두 개 동시, 4번은 mut 없이 수정."
+    }
+  },
+  {
+    title: "6. 소유권 패턴 정리",
+    steps: [
+      { type: "teacher", html: `<p>실무에서 헷갈리는 건 "그래서 언제 뭘 써야 해?"죠. 정리해드릴게요.</p>
+<table><tr><th>상황</th><th>사용</th><th>예시</th></tr>
+<tr><td>값을 읽기만</td><td><code>&T</code></td><td><code>fn print(s: &String)</code></td></tr>
+<tr><td>값을 수정</td><td><code>&mut T</code></td><td><code>fn append(s: &mut String)</code></td></tr>
+<tr><td>값을 소비</td><td><code>T</code></td><td><code>fn drop_it(s: String)</code></td></tr>
+<tr><td>값을 복사</td><td><code>.clone()</code></td><td><code>let s2 = s1.clone()</code></td></tr></table>
+<p><strong>90%의 경우 <code>&T</code>(읽기 빌림)를 쓰면 됩니다.</strong></p>` },
+      { type: "student", html: `<p>소유권 에러가 나면 어떻게 대처해?</p>` },
+      { type: "teacher", html: `<p>단계적으로 접근하면 돼요:</p>
+<ol><li>"이 값을 여기서 꼭 소유해야 하나?" → 아니면 <code>&</code>로 빌리기</li>
+<li>"수정이 꼭 필요한가?" → 아니면 <code>&T</code>, 필요하면 <code>&mut T</code></li>
+<li>"두 곳에서 동시에 필요한가?" → <code>clone()</code>으로 복사</li>
+<li>"정말 공유 소유권이 필요한가?" → <code>Rc&lt;T&gt;</code>, <code>Arc&lt;T&gt;</code> (나중에)</li></ol>
+<p>처음엔 컴파일러 에러 메시지를 그대로 따라가세요. Rust 컴파일러는 <strong>에러 메시지가 정말 친절</strong>해서, "이렇게 고쳐보세요"까지 알려줘요.</p>` },
+      { type: "flashcard", config: {
+        title: "최종 복습 플래시카드",
+        cards: [
+          { front: "소유권 규칙 3가지는?", back: "1. 모든 값에 소유자 하나<br>2. 소유자는 동시에 하나만<br>3. 스코프 벗어나면 자동 drop" },
+          { front: "<code>let s2 = s1;</code> 후<br>s1을 쓸 수 있나?", back: "<strong>아니요!</strong><br>String은 Move 타입이라<br>소유권이 s2로 이동. s1은 무효." },
+          { front: "Copy 타입의 예시 3가지?", back: "<code>i32</code>, <code>bool</code>, <code>char</code><br>스택에만 사는 타입은 자동 복사" },
+          { front: "<code>&T</code>와 <code>&mut T</code>의<br>차이는?", back: "<code>&T</code> = 읽기 빌림 (여러 개 OK)<br><code>&mut T</code> = 수정 빌림 (독점)" },
+          { front: "빌림 규칙의 핵심 한 줄?", back: "읽기 참조가 살아있으면 수정 금지.<br>다 끝나면 수정 가능." }
+        ]
+      }},
+      { type: "keypoint", html: `<ul><li>90%는 <code>&T</code>(읽기 빌림)로 충분</li><li>소유권 에러 대처: & → &mut → clone() → Rc/Arc 순서</li><li>컴파일러 에러 메시지를 따라가면 대부분 해결됨</li><li>Rust의 가치: 빌드 통과 = 메모리 안전 보장</li></ul>` }
+    ],
+    quiz: {
+      question: "소유권 에러 대처 순서로 올바른 것은?",
+      options: [
+        "clone() → & → &mut → Rc",
+        "& → &mut → clone() → Rc",
+        "Rc → & → clone() → &mut",
+        "&mut → & → Rc → clone()"
+      ],
+      answer: 1,
+      explanation: "먼저 빌림(&)을 시도하고, 수정이 필요하면 &mut, 두 곳에서 필요하면 clone(), 정말 공유가 필요하면 Rc/Arc 순서예요."
+    }
+  }
+];
+
+const STORAGE_KEY = "ch05_progress";
+let state = loadState();
+function loadState() { try { const s = localStorage.getItem(STORAGE_KEY); if (s) return JSON.parse(s); } catch {} return { sectionIdx: 0, stepIdx: -1, quizPassed: [] }; }
+function saveState() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {} }
+
+const chat = document.getElementById("chat"), btnPrev = document.getElementById("btnPrev"), btnNext = document.getElementById("btnNext"), progressFill = document.getElementById("progressFill"), progressLabel = document.getElementById("progressLabel"), stepIndicator = document.getElementById("stepIndicator"), mainArea = document.getElementById("mainArea");
+
+function renderBubble(step) { const d = document.createElement("div"); if (step.type==="teacher"||step.type==="student") { d.className=`bubble ${step.type}`; d.innerHTML=`<div class="role">${step.type==="teacher"?"선생님":"학생"}</div>${step.html}`; } else if (step.type==="keypoint") { d.className="keypoint"; d.innerHTML=`<div class="keypoint-title">핵심 정리</div>${step.html}`; } return d; }
+function renderSectionDivider(t) { const d=document.createElement("div"); d.className="section-divider"; d.innerHTML=`<span>${t}</span>`; return d; }
+function renderQuiz(q,si) { const d=document.createElement("div"); d.className="quiz-card"; d.innerHTML=`<h3>퀴즈</h3><p style="margin-bottom:12px;">${q.question}</p>`+q.options.map((o,i)=>`<button class="quiz-option" data-idx="${i}">${o}</button>`).join("")+`<div class="quiz-feedback" id="qf-${si}"></div>`; return d; }
+
+function renderFlashcard(config) { const d=document.createElement("div"); d.className="flashcard-container"; d.innerHTML=`<div style="font-size:0.85rem;font-weight:700;color:var(--primary);margin-bottom:10px;text-align:center;">${config.title}</div><div class="flashcard" id="fc-active"><div class="flashcard-face flashcard-front"><div class="flashcard-label">질문</div><div class="flashcard-content" id="fc-front-content"></div><div class="flashcard-hint">클릭해서 뒤집기</div></div><div class="flashcard-face flashcard-back"><div class="flashcard-label">정답</div><div class="flashcard-content" id="fc-back-content"></div><div class="flashcard-hint">클릭해서 돌아가기</div></div></div><div class="flashcard-nav"><button id="fc-prev-btn">이전</button><button id="fc-next-btn">다음</button></div><div class="flashcard-counter" id="fc-counter"></div>`; requestAnimationFrame(()=>{ const cards=config.cards; let idx=0; const fc=d.querySelector("#fc-active"),frontC=d.querySelector("#fc-front-content"),backC=d.querySelector("#fc-back-content"),counter=d.querySelector("#fc-counter"),prevB=d.querySelector("#fc-prev-btn"),nextB=d.querySelector("#fc-next-btn"); function show(){fc.classList.remove("flipped");frontC.innerHTML=cards[idx].front;backC.innerHTML=cards[idx].back;counter.textContent=`${idx+1} / ${cards.length}`;fc.style.minHeight=Math.max(Math.max(frontC.scrollHeight,backC.scrollHeight,100)+80,160)+"px";} fc.addEventListener("click",()=>fc.classList.toggle("flipped")); prevB.addEventListener("click",e=>{e.stopPropagation();if(idx>0){idx--;show();}}); nextB.addEventListener("click",e=>{e.stopPropagation();if(idx<cards.length-1){idx++;show();}}); show(); }); return d; }
+
+function renderMatch(config) { const d=document.createElement("div"); d.className="match-card"; const shuffled=[...config.pairs.map(p=>p.right)].sort(()=>Math.random()-0.5); d.innerHTML=`<h3>${config.title}</h3><p style="font-size:0.83rem;margin-bottom:12px;">왼쪽을 선택한 뒤, 매칭되는 오른쪽을 클릭하세요.</p><div class="match-columns"><div class="match-col"><div class="match-col-label">타입</div>${config.pairs.map((p,i)=>`<div class="match-item match-left" data-idx="${i}">${p.left}</div>`).join("")}</div><div class="match-col"><div class="match-col-label">동작</div>${shuffled.map(r=>`<div class="match-item match-right" data-val="${r}">${r}</div>`).join("")}</div></div><div class="match-feedback"></div>`; requestAnimationFrame(()=>{ let sel=null,mc=0; const ls=d.querySelectorAll(".match-left"),rs=d.querySelectorAll(".match-right"),fb=d.querySelector(".match-feedback"); ls.forEach(el=>{el.addEventListener("click",()=>{if(el.classList.contains("matched"))return;ls.forEach(l=>l.classList.remove("selected"));el.classList.add("selected");sel=el;});}); rs.forEach(el=>{el.addEventListener("click",()=>{if(!sel||el.classList.contains("matched"))return;const li=parseInt(sel.dataset.idx);if(el.dataset.val===config.pairs[li].right){sel.classList.remove("selected");sel.classList.add("matched");el.classList.add("matched");mc++;sel=null;if(mc===config.pairs.length){fb.className="match-feedback show correct";fb.textContent="모두 맞았어요!";}}else{el.classList.add("wrong-flash");setTimeout(()=>el.classList.remove("wrong-flash"),400);}});}); }); return d; }
+
+function renderCompileCheck(config) { const d=document.createElement("div"); d.className="compile-check-card"; d.innerHTML=`<h3>${config.title}</h3>`+config.items.map((item,i)=>{const ce=item.code.replace(/</g,'&lt;').replace(/>/g,'&gt;');return `<div class="cc-item" data-idx="${i}"><pre><code class="language-rust">${ce}</code></pre><div class="cc-buttons"><button class="cc-btn btn-ok" data-choice="ok">컴파일 OK</button><button class="cc-btn btn-err" data-choice="err">컴파일 에러</button></div><div class="cc-explain"></div></div>`;}).join("")+`<div class="cc-score"></div>`; requestAnimationFrame(()=>{ let ans=0,cor=0;const tot=config.items.length,scoreEl=d.querySelector(".cc-score"); config.items.forEach((item,i)=>{const ci=d.querySelectorAll(".cc-item")[i],btns=ci.querySelectorAll(".cc-btn"),exp=ci.querySelector(".cc-explain"); btns.forEach(btn=>{btn.addEventListener("click",()=>{const ch=btn.dataset.choice,ok=(ch==="ok")===item.compiles;btns.forEach(b=>b.disabled=true);if(ok){btn.classList.add("chosen-correct");exp.className="cc-explain show correct";exp.textContent="정답! "+item.explain;cor++;}else{btn.classList.add("chosen-wrong");(item.compiles?ci.querySelector(".btn-ok"):ci.querySelector(".btn-err")).classList.add("chosen-correct");exp.className="cc-explain show wrong";exp.textContent="오답! "+item.explain;}ci.classList.add("resolved");ans++;if(ans===tot){scoreEl.className="cc-score show";scoreEl.textContent=`결과: ${tot}문제 중 ${cor}문제 정답!`+(cor===tot?" 완벽해요!":"");}});}); }); d.querySelectorAll("pre code.language-rust").forEach(el=>hljs.highlightElement(el)); }); return d; }
+
+function renderDragFill(config) { const d=document.createElement("div"); d.className="drag-fill-card"; const am={}; config.blanks.forEach(b=>{am[b.id]=b.answer;}); let ch=config.template; config.blanks.forEach(b=>{ch=ch.replace(`__${b.id}__`,`<span class="drag-slot" data-id="${b.id}" data-filled=""></span>`);}); d.innerHTML=`<h3>${config.title}</h3><p style="font-size:0.85rem;margin-bottom:10px;">${config.description}</p><div class="drag-candidates">${config.candidates.map((c,i)=>`<span class="drag-chip" draggable="true" data-val="${i}">${c}</span>`).join("")}</div><pre><code>${ch}</code></pre><button class="fill-check-btn">확인</button><div class="fill-feedback"></div>`; requestAnimationFrame(()=>{ const chips=d.querySelectorAll(".drag-chip"),slots=d.querySelectorAll(".drag-slot"),checkBtn=d.querySelector(".fill-check-btn"),fb=d.querySelector(".fill-feedback"); let dc=null; chips.forEach(chip=>{chip.addEventListener("dragstart",e=>{if(chip.classList.contains("used")){e.preventDefault();return;}dc=chip;chip.classList.add("dragging");e.dataTransfer.effectAllowed="move";});chip.addEventListener("dragend",()=>{chip.classList.remove("dragging");dc=null;});chip.addEventListener("click",()=>{if(chip.classList.contains("used"))return;chips.forEach(c=>c.classList.remove("dragging"));if(dc===chip){dc=null;return;}dc=chip;chip.classList.add("dragging");});}); slots.forEach(slot=>{slot.addEventListener("dragover",e=>{e.preventDefault();slot.classList.add("dragover");});slot.addEventListener("dragleave",()=>slot.classList.remove("dragover"));slot.addEventListener("drop",e=>{e.preventDefault();slot.classList.remove("dragover");if(dc)placeChip(slot,dc);});slot.addEventListener("click",()=>{if(dc){placeChip(slot,dc);}else if(slot.dataset.filled!==""){const ci=slot.dataset.filled,chip=d.querySelector(`.drag-chip[data-val="${ci}"]`);if(chip)chip.classList.remove("used");slot.textContent="";slot.dataset.filled="";slot.classList.remove("filled","correct","wrong");}});}); function placeChip(slot,chip){if(slot.dataset.filled!==""){const oi=slot.dataset.filled,oc=d.querySelector(`.drag-chip[data-val="${oi}"]`);if(oc)oc.classList.remove("used");}slot.textContent=chip.textContent;slot.dataset.filled=chip.dataset.val;slot.classList.add("filled");slot.classList.remove("correct","wrong");chip.classList.remove("dragging");chip.classList.add("used");dc=null;} checkBtn.addEventListener("click",()=>{let ac=true,af=true;slots.forEach(slot=>{const id=slot.dataset.id,ans=am[id],val=slot.textContent.trim();if(!val){af=false;ac=false;return;}if(val===ans){slot.classList.remove("wrong");slot.classList.add("correct");}else{slot.classList.remove("correct");slot.classList.add("wrong");ac=false;}});if(!af){fb.className="fill-feedback show wrong";fb.textContent="빈칸을 모두 채워주세요!";}else if(ac){fb.className="fill-feedback show correct";fb.textContent="정답! "+config.successMsg;checkBtn.disabled=true;}else{fb.className="fill-feedback show wrong";fb.textContent="틀린 칸이 있어요. 빈칸을 클릭해서 빼고 다시 넣어보세요!";}}); }); return d; }
+
+function renderStep(step) { if(step.type==="flashcard")return renderFlashcard(step.config); if(step.type==="drag-fill")return renderDragFill(step.config); if(step.type==="match")return renderMatch(step.config); if(step.type==="compile-check")return renderCompileCheck(step.config); return renderBubble(step); }
+
+function renderCompletion() { const d=document.createElement("div"); d.className="completion"; d.innerHTML=`<h2>학습 완료!</h2><p>Ch05 소유권 튜토리얼을 모두 마쳤습니다.</p><table class="summary-table"><tr><th>개념</th><th>한 줄 요약</th></tr><tr><td>소유권</td><td>모든 값에 소유자 하나, 스코프 벗어나면 drop</td></tr><tr><td>이동(Move)</td><td>대입 시 소유권 이동, 원래 변수 무효</td></tr><tr><td>Copy</td><td>스택 타입은 자동 복사 (i32, bool 등)</td></tr><tr><td><code>&T</code></td><td>읽기 빌림 (여러 개 OK)</td></tr><tr><td><code>&mut T</code></td><td>수정 빌림 (독점)</td></tr><tr><td>clone()</td><td>명시적 깊은 복사</td></tr></table><p style="margin-top:16px;font-size:0.9rem;">다음: <strong>Ch06 구조체</strong></p><button class="restart-btn" onclick="restart()">처음부터 다시</button>`; return d; }
+
+function makeInstant(el){el.style.animation="none";el.style.opacity="1";el.style.transform="none";}
+function isQuizStep(){return state.stepIdx>=SECTIONS[state.sectionIdx].steps.length;}
+function isCompleted(){return state.sectionIdx>=SECTIONS.length;}
+function quizLocked(){return isQuizStep()&&!state.quizPassed.includes(state.sectionIdx);}
+
+function rebuildChat() { chat.innerHTML=""; for(let s=0;s<state.sectionIdx;s++){const sec=SECTIONS[s];const dv=renderSectionDivider(sec.title);makeInstant(dv);chat.appendChild(dv);sec.steps.forEach(step=>{const el=renderStep(step);makeInstant(el);chat.appendChild(el);});const note=document.createElement("div");note.className="keypoint";makeInstant(note);note.innerHTML=`<div class="keypoint-title">퀴즈 통과!</div><p>${sec.quiz.explanation}</p>`;chat.appendChild(note);} if(isCompleted()){chat.appendChild(renderCompletion());updateUI();scrollToBottom();return;} const sec=SECTIONS[state.sectionIdx];const dv=renderSectionDivider(sec.title);makeInstant(dv);chat.appendChild(dv);const sc=Math.min(state.stepIdx+1,sec.steps.length);for(let i=0;i<sc;i++){const el=renderStep(sec.steps[i]);if(i<sc-1)makeInstant(el);chat.appendChild(el);}if(isQuizStep()){const qEl=renderQuiz(sec.quiz,state.sectionIdx);chat.appendChild(qEl);if(state.quizPassed.includes(state.sectionIdx))markQuizPassed(qEl,sec.quiz);else bindQuiz(qEl,sec.quiz,state.sectionIdx);}chat.querySelectorAll("pre code.language-rust").forEach(el=>hljs.highlightElement(el));updateUI();scrollToBottom(); }
+
+function bindQuiz(c,q,si){const bs=c.querySelectorAll(".quiz-option"),fb=c.querySelector(".quiz-feedback");bs.forEach(b=>{b.addEventListener("click",()=>{const idx=parseInt(b.dataset.idx);if(idx===q.answer){b.classList.add("correct");fb.className="quiz-feedback show correct";fb.innerHTML="정답! "+q.explanation;bs.forEach(x=>x.disabled=true);if(!state.quizPassed.includes(si)){state.quizPassed.push(si);saveState();}updateUI();}else{b.classList.add("wrong");b.disabled=true;fb.className="quiz-feedback show wrong";fb.textContent="틀렸어요. 다시 골라보세요!";}});});}
+function markQuizPassed(c,q){const bs=c.querySelectorAll(".quiz-option"),fb=c.querySelector(".quiz-feedback");bs.forEach(b=>{if(parseInt(b.dataset.idx)===q.answer)b.classList.add("correct");b.disabled=true;});fb.className="quiz-feedback show correct";fb.innerHTML="정답! "+q.explanation;}
+
+function next(){if(isCompleted()||quizLocked())return;const sec=SECTIONS[state.sectionIdx];if(state.stepIdx<sec.steps.length){state.stepIdx++;saveState();rebuildChat();}else if(state.quizPassed.includes(state.sectionIdx)){state.sectionIdx++;state.stepIdx=-1;saveState();if(isCompleted())rebuildChat();else next();}}
+function prev(){if(state.stepIdx>0){state.stepIdx--;saveState();rebuildChat();}else if(state.sectionIdx>0){state.sectionIdx--;state.stepIdx=SECTIONS[state.sectionIdx].steps.length;saveState();rebuildChat();}}
+function restart(){state={sectionIdx:0,stepIdx:-1,quizPassed:[]};saveState();next();}
+function updateUI(){const done=isCompleted(),total=SECTIONS.length;progressFill.style.width=(done?100:(state.sectionIdx/total)*100)+"%";progressLabel.textContent=done?"완료!":`${state.sectionIdx+1} / ${total}`;btnPrev.disabled=(state.sectionIdx===0&&state.stepIdx<=0);if(done){btnNext.disabled=true;stepIndicator.textContent="";}else if(quizLocked()){btnNext.disabled=true;stepIndicator.textContent="퀴즈를 풀어주세요";}else{btnNext.disabled=false;const t=SECTIONS[state.sectionIdx].steps.length+1;stepIndicator.textContent=`${Math.min(state.stepIdx+1,t)} / ${t}`;}}
+function scrollToBottom(){requestAnimationFrame(()=>{mainArea.scrollTop=mainArea.scrollHeight;});}
+
+btnNext.addEventListener("click",next);btnPrev.addEventListener("click",prev);
+document.getElementById("btnReset").addEventListener("click",()=>{if(confirm("진행 상태를 초기화하고 처음부터 시작할까요?"))restart();});
+document.addEventListener("keydown",e=>{const tag=document.activeElement?.tagName;if(tag==="INPUT"||tag==="BUTTON")return;if(e.key==="Enter"||e.key==="ArrowRight")next();if(e.key==="ArrowLeft")prev();});
+if(state.stepIdx===-1&&state.sectionIdx===0)next();else rebuildChat();
+</script>
+</body>
+</html>
