@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ch08: 컬렉션 — 대화형 튜토리얼</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root { --teacher-bg: #e3f2fd; --student-bg: #e8f5e9; --keypoint-bg: #fff8e1; --keypoint-border: #ffb300; --quiz-bg: #f3e5f5; --primary: #1565c0; --success: #2e7d32; --danger: #c62828; --text: #212121; --text-light: #757575; --bg: #fafafa; --header-h: 56px; --footer-h: 64px; }
+  body { font-family: 'Segoe UI',-apple-system,BlinkMacSystemFont,sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; display: flex; flex-direction: column; min-height: 100vh; }
+  header { position: sticky; top: 0; z-index: 100; background: var(--primary); color: #fff; height: var(--header-h); display: flex; align-items: center; padding: 0 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+  header h1 { font-size: 1.1rem; font-weight: 600; flex: 1; white-space: nowrap; }
+  .reset-btn { background: none; border: 1px solid rgba(255,255,255,0.5); color: rgba(255,255,255,0.85); padding: 3px 10px; border-radius: 4px; font-size: 0.72rem; cursor: pointer; font-family: inherit; margin-right: 12px; transition: all 0.2s; }
+  .reset-btn:hover { background: rgba(255,255,255,0.15); border-color: #fff; color: #fff; }
+  .progress-wrapper { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; }
+  .progress-bar { width: 120px; height: 6px; background: rgba(255,255,255,0.3); border-radius: 3px; overflow: hidden; }
+  .progress-fill { height: 100%; background: #fff; border-radius: 3px; transition: width 0.4s ease; }
+  main { flex: 1; overflow-y: auto; padding: 20px 16px; padding-bottom: calc(var(--footer-h) + 20px); }
+  .chat-container { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
+  .bubble { max-width: 85%; padding: 14px 18px; border-radius: 18px; font-size: 0.95rem; opacity: 0; transform: translateY(20px); animation: slideUp 0.35s ease forwards; word-break: keep-all; overflow-wrap: break-word; }
+  @keyframes slideUp { to { opacity: 1; transform: translateY(0); } }
+  .bubble.teacher { align-self: flex-start; background: var(--teacher-bg); border-bottom-left-radius: 4px; }
+  .bubble.student { align-self: flex-end; background: var(--student-bg); border-bottom-right-radius: 4px; }
+  .bubble .role { font-size: 0.75rem; font-weight: 700; margin-bottom: 4px; }
+  .bubble.teacher .role { color: var(--primary); } .bubble.student .role { color: var(--success); }
+  .bubble p { margin: 6px 0; } .bubble p:first-of-type { margin-top: 0; } .bubble strong { font-weight: 600; }
+  .bubble code { background: rgba(0,0,0,0.07); padding: 1px 5px; border-radius: 3px; font-size: 0.88em; font-family: 'Cascadia Code','Fira Code',Consolas,monospace; }
+  .bubble pre { margin: 10px -8px; border-radius: 8px; overflow-x: auto; }
+  .bubble pre code { background: none; padding: 14px 16px; display: block; font-size: 0.85em; line-height: 1.5; }
+  .bubble ul, .bubble ol { padding-left: 20px; margin: 6px 0; } .bubble li { margin: 3px 0; }
+  .bubble table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 0.88rem; }
+  .bubble th, .bubble td { padding: 6px 10px; border: 1px solid rgba(0,0,0,0.12); text-align: left; }
+  .bubble th { background: rgba(0,0,0,0.06); font-weight: 600; }
+  .keypoint { max-width: 85%; align-self: center; background: var(--keypoint-bg); border-left: 4px solid var(--keypoint-border); border-radius: 8px; padding: 14px 18px; font-size: 0.9rem; opacity: 0; transform: translateY(20px); animation: slideUp 0.35s ease forwards; }
+  .keypoint-title { font-weight: 700; color: #e65100; margin-bottom: 6px; font-size: 0.85rem; }
+  .keypoint ul { padding-left: 18px; margin: 4px 0; } .keypoint li { margin: 3px 0; }
+  .keypoint code { background: rgba(0,0,0,0.06); padding: 1px 4px; border-radius: 3px; font-family: 'Cascadia Code','Fira Code',Consolas,monospace; font-size: 0.88em; }
+  .quiz-card { max-width: 85%; align-self: center; background: var(--quiz-bg); border-radius: 16px; padding: 20px 22px; opacity: 0; transform: translateY(20px); animation: slideUp 0.35s ease forwards; }
+  .quiz-card h3 { font-size: 0.95rem; margin-bottom: 14px; color: #6a1b9a; }
+  .quiz-option { display: block; width: 100%; text-align: left; padding: 10px 14px; margin: 6px 0; border: 2px solid #ce93d8; border-radius: 10px; background: #fff; cursor: pointer; font-size: 0.9rem; font-family: inherit; transition: all 0.2s; }
+  .quiz-option:hover:not(:disabled) { background: #f3e5f5; border-color: #ab47bc; } .quiz-option:disabled { cursor: default; }
+  .quiz-option.correct { background: #c8e6c9; border-color: var(--success); color: var(--success); font-weight: 600; }
+  .quiz-option.wrong { background: #ffcdd2; border-color: var(--danger); color: var(--danger); }
+  .quiz-option code { font-family: 'Cascadia Code','Fira Code',Consolas,monospace; font-size: 0.88em; }
+  .quiz-feedback { margin-top: 12px; padding: 10px 14px; border-radius: 8px; font-size: 0.88rem; display: none; }
+  .quiz-feedback.show { display: block; } .quiz-feedback.correct { background: #c8e6c9; color: #1b5e20; } .quiz-feedback.wrong { background: #ffcdd2; color: #b71c1c; }
+  .section-divider { text-align: center; padding: 20px 0 10px; opacity: 0; animation: slideUp 0.35s ease forwards; }
+  .section-divider span { display: inline-block; background: var(--primary); color: #fff; padding: 6px 18px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; }
+  .flashcard-container { max-width: 85%; align-self: center; perspective: 800px; opacity: 0; transform: translateY(20px); animation: slideUp 0.35s ease forwards; }
+  .flashcard { width: 100%; min-height: 160px; cursor: pointer; position: relative; transform-style: preserve-3d; transition: transform 0.5s ease; border-radius: 14px; }
+  .flashcard.flipped { transform: rotateY(180deg); }
+  .flashcard-face { position: absolute; top: 0; left: 0; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px 24px; text-align: center; font-size: 0.92rem; }
+  .flashcard-front { background: linear-gradient(135deg, #e3f2fd, #bbdefb); border: 2px solid #90caf9; }
+  .flashcard-back { background: linear-gradient(135deg, #e8f5e9, #c8e6c9); border: 2px solid #81c784; transform: rotateY(180deg); }
+  .flashcard-label { font-size: 0.72rem; font-weight: 700; color: var(--text-light); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+  .flashcard-content { font-size: 1rem; line-height: 1.5; }
+  .flashcard-content code { background: rgba(0,0,0,0.08); padding: 1px 5px; border-radius: 3px; font-family: 'Cascadia Code','Fira Code',Consolas,monospace; font-size: 0.9em; }
+  .flashcard-hint { font-size: 0.75rem; color: var(--text-light); margin-top: 10px; }
+  .flashcard-nav { display: flex; justify-content: center; gap: 8px; margin-top: 10px; }
+  .flashcard-nav button { padding: 5px 14px; border: 1px solid #90caf9; border-radius: 6px; background: #fff; cursor: pointer; font-size: 0.8rem; font-family: inherit; }
+  .flashcard-nav button:hover { background: #e3f2fd; }
+  .flashcard-counter { font-size: 0.75rem; color: var(--text-light); text-align: center; margin-top: 6px; }
+  .match-card { max-width: 85%; align-self: center; background: #fce4ec; border-radius: 14px; padding: 20px 22px; opacity: 0; transform: translateY(20px); animation: slideUp 0.35s ease forwards; }
+  .match-card h3 { font-size: 0.9rem; color: #880e4f; margin-bottom: 14px; }
+  .match-columns { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+  .match-col { display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 140px; }
+  .match-col-label { font-size: 0.75rem; font-weight: 700; color: var(--text-light); text-align: center; margin-bottom: 4px; }
+  .match-item { padding: 10px 14px; border-radius: 10px; text-align: center; font-size: 0.88rem; cursor: pointer; transition: all 0.2s; user-select: none; font-family: inherit; }
+  .match-left { background: #fff; border: 2px solid #f48fb1; } .match-left:hover { background: #fce4ec; }
+  .match-left.selected { background: #f48fb1; color: #fff; border-color: #e91e63; }
+  .match-left.matched { background: #c8e6c9; border-color: var(--success); color: var(--success); cursor: default; }
+  .match-right { background: #fff; border: 2px solid #ce93d8; } .match-right:hover { background: #f3e5f5; }
+  .match-right.matched { background: #c8e6c9; border-color: var(--success); color: var(--success); cursor: default; }
+  .match-right.wrong-flash { animation: wrongShake 0.4s ease; }
+  @keyframes wrongShake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+  .match-item code { font-family: 'Cascadia Code','Fira Code',Consolas,monospace; font-size: 0.88em; }
+  .match-feedback { margin-top: 12px; padding: 8px 12px; border-radius: 6px; font-size: 0.85rem; text-align: center; display: none; }
+  .match-feedback.show { display: block; } .match-feedback.correct { background: #c8e6c9; color: #1b5e20; }
+  .compile-check-card { max-width: 85%; align-self: center; background: #e0f2f1; border-radius: 14px; padding: 20px 22px; opacity: 0; transform: translateY(20px); animation: slideUp 0.35s ease forwards; }
+  .compile-check-card h3 { font-size: 0.9rem; color: #00695c; margin-bottom: 14px; }
+  .cc-item { background: #fff; border: 2px solid #80cbc4; border-radius: 10px; margin: 10px 0; padding: 12px 14px; transition: all 0.3s; }
+  .cc-item pre { margin: 0 0 10px; border-radius: 6px; overflow-x: auto; }
+  .cc-item pre code { padding: 10px 14px; display: block; font-size: 0.83em; line-height: 1.45; }
+  .cc-buttons { display: flex; gap: 8px; }
+  .cc-btn { flex: 1; padding: 8px; border: 2px solid #b2dfdb; border-radius: 8px; background: #fff; cursor: pointer; font-family: inherit; font-size: 0.85rem; font-weight: 600; transition: all 0.2s; }
+  .cc-btn:hover:not(:disabled) { background: #e0f2f1; } .cc-btn:disabled { cursor: default; opacity: 0.7; }
+  .cc-btn.btn-ok { color: var(--success); } .cc-btn.btn-err { color: var(--danger); }
+  .cc-btn.chosen-correct { background: #c8e6c9; border-color: var(--success); }
+  .cc-btn.chosen-wrong { background: #ffcdd2; border-color: var(--danger); }
+  .cc-item.resolved { border-color: #c8e6c9; }
+  .cc-explain { margin-top: 8px; padding: 8px 12px; border-radius: 6px; font-size: 0.83rem; display: none; }
+  .cc-explain.show { display: block; } .cc-explain.correct { background: #c8e6c9; color: #1b5e20; } .cc-explain.wrong { background: #ffcdd2; color: #b71c1c; }
+  .cc-score { margin-top: 14px; text-align: center; font-size: 0.9rem; font-weight: 700; color: #00695c; display: none; } .cc-score.show { display: block; }
+  .drag-fill-card { max-width: 85%; align-self: center; background: #e8eaf6; border-radius: 14px; padding: 20px 22px; opacity: 0; transform: translateY(20px); animation: slideUp 0.35s ease forwards; }
+  .drag-fill-card h3 { font-size: 0.9rem; color: #283593; margin-bottom: 8px; }
+  .drag-fill-card pre { margin: 8px 0; border-radius: 8px; overflow-x: auto; }
+  .drag-fill-card pre code { padding: 14px 16px; display: block; font-size: 0.85em; line-height: 1.5; }
+  .drag-candidates { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; justify-content: center; }
+  .drag-chip { display: inline-block; padding: 6px 14px; background: #fff; border: 2px solid #7986cb; border-radius: 20px; font-family: 'Cascadia Code','Fira Code',Consolas,monospace; font-size: 0.88em; cursor: grab; user-select: none; transition: all 0.2s; }
+  .drag-chip:hover { background: #c5cae9; } .drag-chip.dragging { opacity: 0.4; } .drag-chip.used { opacity: 0.3; cursor: default; border-style: dashed; }
+  .drag-slot { display: inline-block; min-width: 60px; padding: 3px 10px; margin: 0 2px; border: 2px dashed #7986cb; border-radius: 6px; background: rgba(255,255,255,0.7); font-family: 'Cascadia Code','Fira Code',Consolas,monospace; font-size: 0.88em; text-align: center; min-height: 1.6em; vertical-align: middle; transition: all 0.2s; cursor: pointer; }
+  .drag-slot.dragover { background: #c5cae9; border-color: #3949ab; }
+  .drag-slot.filled { background: #e8eaf6; border-style: solid; border-color: #5c6bc0; }
+  .drag-slot.correct { background: #c8e6c9; border-color: var(--success); border-style: solid; }
+  .drag-slot.wrong { background: #ffcdd2; border-color: var(--danger); border-style: solid; }
+  .fill-check-btn { display: block; margin: 14px auto 0; padding: 8px 24px; background: #3f51b5; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-family: inherit; font-size: 0.88rem; }
+  .fill-check-btn:hover { background: #283593; } .fill-check-btn:disabled { opacity: 0.4; cursor: default; }
+  .fill-feedback { margin-top: 10px; padding: 8px 12px; border-radius: 6px; font-size: 0.85rem; display: none; text-align: center; }
+  .fill-feedback.show { display: block; } .fill-feedback.correct { background: #c8e6c9; color: #1b5e20; } .fill-feedback.wrong { background: #ffcdd2; color: #b71c1c; }
+  .completion { text-align: center; padding: 40px 20px; opacity: 0; animation: slideUp 0.5s ease forwards; }
+  .completion h2 { font-size: 1.5rem; margin-bottom: 12px; color: var(--primary); } .completion p { color: var(--text-light); margin: 6px 0; }
+  .completion .summary-table { margin: 20px auto; border-collapse: collapse; font-size: 0.9rem; }
+  .completion .summary-table th, .completion .summary-table td { padding: 8px 16px; border: 1px solid #e0e0e0; text-align: left; }
+  .completion .summary-table th { background: var(--primary); color: #fff; }
+  .restart-btn { margin-top: 20px; padding: 10px 28px; background: var(--primary); color: #fff; border: none; border-radius: 8px; font-size: 1rem; cursor: pointer; font-family: inherit; } .restart-btn:hover { background: #0d47a1; }
+  footer { position: fixed; bottom: 0; left: 0; right: 0; height: var(--footer-h); background: #fff; border-top: 1px solid #e0e0e0; display: flex; align-items: center; justify-content: center; gap: 16px; padding: 0 20px; z-index: 100; }
+  .nav-btn { padding: 10px 32px; border: none; border-radius: 10px; font-size: 0.95rem; font-weight: 600; cursor: pointer; font-family: inherit; transition: all 0.2s; } .nav-btn:disabled { opacity: 0.4; cursor: default; }
+  .btn-prev { background: #e0e0e0; color: var(--text); } .btn-prev:hover:not(:disabled) { background: #bdbdbd; }
+  .btn-next { background: var(--primary); color: #fff; } .btn-next:hover:not(:disabled) { background: #0d47a1; }
+  .step-indicator { font-size: 0.8rem; color: var(--text-light); min-width: 60px; text-align: center; }
+  @media (max-width: 600px) { header h1 { font-size: 0.95rem; } .progress-bar { width: 80px; } .bubble, .keypoint, .quiz-card, .flashcard-container, .drag-fill-card, .match-card, .compile-check-card { max-width: 92%; font-size: 0.9rem; } .nav-btn { padding: 10px 24px; font-size: 0.9rem; } .match-columns { flex-direction: column; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Ch08: 컬렉션</h1>
+  <button class="reset-btn" id="btnReset" title="처음부터 다시 시작">초기화</button>
+  <div class="progress-wrapper"><span id="progressLabel">1 / 6</span><div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div></div>
+</header>
+<main id="mainArea"><div class="chat-container" id="chat"></div></main>
+<footer>
+  <button class="nav-btn btn-prev" id="btnPrev" disabled>이전</button>
+  <span class="step-indicator" id="stepIndicator"></span>
+  <button class="nav-btn btn-next" id="btnNext">다음</button>
+</footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/rust.min.js"></script>
+<script>
+const SECTIONS = [
+  {
+    title: "1. Vec<T> — 가변 길이 배열",
+    steps: [
+      { type: "teacher", html: `<p>ch02에서 배열은 길이가 고정이라고 했죠? <code>Vec</code>은 <strong>길이가 늘어나는 배열</strong>이에요.</p>
+<pre><code class="language-rust">let mut nums: Vec&lt;i32&gt; = Vec::new();  // 빈 Vec 생성
+nums.push(1);
+nums.push(2);
+nums.push(3);
+println!("{:?}", nums);  // [1, 2, 3]
+
+// 매크로로 간편 생성
+let nums = vec![1, 2, 3];  // 위와 같은 결과</code></pre>` },
+      { type: "student", html: `<p>C++의 <code>std::vector</code>랑 같은 거야?</p>` },
+      { type: "teacher", html: `<p>거의 같아요! 내부적으로 힙에 연속 메모리를 할당하고, 꽉 차면 더 큰 메모리로 이동해요.</p>
+<table><tr><th></th><th>C++ vector</th><th>Java ArrayList</th><th>Rust Vec</th></tr>
+<tr><td>접근</td><td><code>v[i]</code> 또는 <code>v.at(i)</code></td><td><code>list.get(i)</code></td><td><code>v[i]</code> 또는 <code>v.get(i)</code></td></tr>
+<tr><td>범위 초과</td><td>at(): 예외 / []: UB</td><td>예외</td><td>[]: panic / get(): Option</td></tr>
+<tr><td>소유권</td><td>없음</td><td>GC</td><td>Vec이 원소를 소유</td></tr></table>
+<p>Rust의 <code>v[i]</code>는 범위 밖이면 <strong>panic</strong>이고, <code>v.get(i)</code>는 <strong>Option</strong>을 반환해요.</p>` },
+      { type: "keypoint", html: `<ul><li><code>Vec&lt;T&gt;</code> = 가변 길이 배열, 힙에 저장</li><li><code>vec![1, 2, 3]</code> 매크로로 간편 생성</li><li><code>v[i]</code>는 범위 밖이면 panic, <code>v.get(i)</code>는 Option 반환</li><li>C++ vector, Java ArrayList와 같은 역할</li></ul>` }
+    ],
+    quiz: {
+      question: "<code>v.get(5)</code>에서 인덱스가 범위 밖이면 어떻게 되나?",
+      options: [ "panic이 발생한다", "<code>None</code>을 반환한다", "0을 반환한다", "컴파일 에러가 난다" ],
+      answer: 1,
+      explanation: "v.get(i)는 범위 밖이면 None을 반환해요. v[i]는 panic이니 안전한 접근에는 get()을 쓰세요."
+    }
+  },
+  {
+    title: "2. Vec과 소유권",
+    steps: [
+      { type: "teacher", html: `<p>Vec에 값을 넣으면 <strong>소유권이 Vec으로 이동</strong>해요. ch05 복습이에요.</p>
+<pre><code class="language-rust">let name = String::from("철수");
+let mut names = Vec::new();
+names.push(name);
+// println!("{name}");  // 에러! name은 Vec으로 이동됨</code></pre>` },
+      { type: "student", html: `<p>for로 순회할 때도 소유권이 이동돼?</p>` },
+      { type: "teacher", html: `<p>그래서 Rust에서 순회 방법이 세 가지예요.</p>
+<pre><code class="language-rust">let names = vec![String::from("철수"), String::from("영희")];
+
+// 1. &로 빌려서 순회 (가장 많이 씀)
+for name in &names {
+    println!("{name}");  // 읽기만
+}
+println!("{:?}", names);  // OK! names 여전히 유효
+
+// 2. &mut로 수정하며 순회
+let mut nums = vec![1, 2, 3];
+for n in &mut nums {
+    *n *= 2;  // 각 원소 2배
+}
+
+// 3. 소유권 이동 (순회 후 Vec 사용 불가)
+for name in names {
+    println!("소비: {name}");
+}
+// println!("{:?}", names);  // 에러! 소유권 이동됨</code></pre>
+<p><strong>90%는 <code>for item in &vec</code>으로 충분</strong>해요.</p>` },
+      { type: "keypoint", html: `<ul><li>Vec에 push하면 소유권 이동</li><li><code>for x in &vec</code> = 읽기 빌림 (가장 많이 씀)</li><li><code>for x in &mut vec</code> = 수정 빌림</li><li><code>for x in vec</code> = 소유권 이동 (Vec 소비)</li></ul>` },
+      { type: "compile-check", config: {
+        title: "이 코드, 컴파일 될까? — Vec 순회 편",
+        items: [
+          { code: 'let names = vec![String::from("A")];\nfor n in &names { println!("{n}"); }\nprintln!("{:?}", names);', compiles: true,
+            explain: "&names로 빌려서 순회했으니 names는 여전히 유효!" },
+          { code: 'let names = vec![String::from("A")];\nfor n in names { println!("{n}"); }\nprintln!("{:?}", names);', compiles: false,
+            explain: "names를 소비해서 순회했으니 이후 사용 불가!" },
+          { code: 'let mut nums = vec![1, 2, 3];\nfor n in &mut nums { *n += 1; }\nprintln!("{:?}", nums);', compiles: true,
+            explain: "&mut로 수정하며 순회. nums는 여전히 유효하고 값이 바뀌어 있어요!" }
+        ]
+      }}
+    ],
+    quiz: {
+      question: "Vec 순회에서 가장 많이 쓰는 방법은?",
+      options: [ "<code>for x in vec</code>", "<code>for x in &vec</code>", "<code>for x in &mut vec</code>", "<code>vec.iter().for_each()</code>" ],
+      answer: 1,
+      explanation: "90%는 for x in &vec (읽기 빌림)로 충분해요. 소유권도 유지돼요."
+    }
+  },
+  {
+    title: "3. String — 생각보다 복잡한 문자열",
+    steps: [
+      { type: "teacher", html: `<p>Rust에서 문자열은 두 가지예요:</p>
+<pre><code class="language-rust">let s1: &str = "hello";              // &str — 문자열 슬라이스 (빌림)
+let s2: String = String::from("hello"); // String — 소유 문자열 (힙)</code></pre>
+<table><tr><th></th><th><code>&str</code></th><th><code>String</code></th></tr>
+<tr><td>소유권</td><td>빌림 (참조)</td><td>소유</td></tr>
+<tr><td>크기</td><td>고정</td><td>가변 (push 가능)</td></tr>
+<tr><td>저장 위치</td><td>어디든</td><td>힙</td></tr>
+<tr><td>비유</td><td><code>&[T]</code> (슬라이스)</td><td><code>Vec&lt;T&gt;</code></td></tr></table>` },
+      { type: "student", html: `<p>왜 <code>String[0]</code>으로 첫 글자를 못 가져와?</p>` },
+      { type: "teacher", html: `<p>Rust의 String은 <strong>UTF-8</strong>이거든요. 한글은 한 글자가 3바이트예요.</p>
+<pre><code class="language-rust">let s = String::from("안녕");
+// s[0]  // 에러! 뭘 원하는 거야? 바이트? 문자?
+
+// 문자로 순회
+for c in s.chars() {
+    println!("{c}");  // '안', '녕'
+}</code></pre>
+<p><code>s[0]</code>이 O(1)이어야 하는데, UTF-8에서는 n번째 <strong>문자</strong>를 찾으려면 처음부터 세야 해요. 그래서 Rust는 <strong>인덱싱 자체를 막아서</strong> 성능 함정을 예방한 거예요.</p>` },
+      { type: "student", html: `<p>문자열 합치기는 어떻게 해?</p>` },
+      { type: "teacher", html: `<p>여러 방법이 있어요:</p>
+<pre><code class="language-rust">let hello = String::from("hello");
+let world = String::from(" world");
+
+// 1. format! 매크로 (가장 깔끔)
+let s = format!("{hello}{world}");
+
+// 2. push_str
+let mut s = hello;
+s.push_str(" world");
+
+// 3. + 연산자 (소유권 주의!)
+// let s = hello + &world;  // hello는 이동됨</code></pre>
+<p><strong><code>format!</code>을 추천해요.</strong> 소유권 걱정 없이 깔끔하게 합칠 수 있어요.</p>` },
+      { type: "keypoint", html: `<ul><li><code>&str</code> = 빌림(참조), <code>String</code> = 소유(힙)</li><li>String은 UTF-8이라 인덱싱(<code>s[0]</code>) 불가</li><li><code>s.chars()</code>로 문자 순회, <code>s.as_bytes()</code>로 바이트 접근</li><li>문자열 합치기는 <code>format!</code> 추천</li></ul>` }
+    ],
+    quiz: {
+      question: "Rust에서 String 인덱싱(<code>s[0]</code>)이 안 되는 이유는?",
+      options: [ "Rust가 문자열을 지원하지 않아서", "UTF-8에서 n번째 문자를 O(1)에 찾을 수 없어서", "보안상의 이유로", "컴파일러 버그 때문에" ],
+      answer: 1,
+      explanation: "UTF-8은 가변 길이 인코딩이라 n번째 문자를 O(1)에 찾을 수 없어요. 성능 함정을 막기 위해 인덱싱을 금지한 거예요."
+    }
+  },
+  {
+    title: "4. HashMap — 키-값 저장소",
+    steps: [
+      { type: "teacher", html: `<p>Java의 <code>HashMap</code>이랑 같은 거예요.</p>
+<pre><code class="language-rust">use std::collections::HashMap;
+
+let mut scores = HashMap::new();
+scores.insert("철수", 90);
+scores.insert("영희", 85);
+
+// 값 가져오기 — Option 반환!
+match scores.get("철수") {
+    Some(score) => println!("철수: {score}"),
+    None => println!("없음"),
+}</code></pre>` },
+      { type: "student", html: `<p><code>get</code>이 왜 Option이야? Java는 그냥 null 반환하잖아.</p>` },
+      { type: "teacher", html: `<p>ch07에서 배웠죠 — Rust에 null 없어요! 키가 없을 수 있으니 <code>Option</code>으로 표현하는 거예요.</p>
+<p><code>entry</code> API도 유용해요 — "없으면 넣고, 있으면 무시":</p>
+<pre><code class="language-rust">let mut scores = HashMap::new();
+scores.entry("철수").or_insert(90);  // 없으면 90 삽입
+scores.entry("철수").or_insert(100); // 이미 있으니 무시
+println!("{:?}", scores);  // {"철수": 90}
+
+// 카운팅 패턴
+let text = "hello world";
+let mut counts = HashMap::new();
+for c in text.chars() {
+    let count = counts.entry(c).or_insert(0);
+    *count += 1;
+}</code></pre>` },
+      { type: "keypoint", html: `<ul><li><code>HashMap&lt;K, V&gt;</code> = 키-값 저장소, <code>use std::collections::HashMap</code></li><li><code>get()</code>은 <code>Option</code> 반환 (null 없음)</li><li><code>entry().or_insert()</code> = 없으면 넣기 패턴</li><li>String을 키로 쓰면 소유권 이동</li></ul>` },
+      { type: "drag-fill", config: {
+        title: "드래그 채우기: HashMap 카운팅 패턴",
+        description: "글자별 카운팅 코드를 완성하세요.",
+        template: `let mut counts = HashMap::new();
+for c in text.chars() {
+    let count = counts.__0__(c).__1__(0);
+    *count += 1;
+}`,
+        blanks: [ { id: 0, answer: "entry" }, { id: 1, answer: "or_insert" } ],
+        candidates: ["entry", "get", "or_insert", "insert", "unwrap"],
+        successMsg: "entry(key).or_insert(default) — 없으면 기본값을 넣고, 있으면 기존 값의 가변 참조를 반환해요!"
+      }}
+    ],
+    quiz: {
+      question: "HashMap의 <code>get()</code>이 Option을 반환하는 이유는?",
+      options: [ "성능 때문에", "키가 없을 수 있으므로 — Rust에 null이 없기 때문", "HashMap이 정렬되어 있어서", "컴파일러 제한 때문에" ],
+      answer: 1,
+      explanation: "Rust에 null이 없으니 키가 없는 경우를 Option으로 표현해요. None 처리를 컴파일러가 강제!"
+    }
+  },
+  {
+    title: "5. 이터레이터 맛보기",
+    steps: [
+      { type: "teacher", html: `<p>Rust는 <strong>함수형 프로그래밍 스타일</strong>의 이터레이터를 강력하게 지원해요.</p>
+<pre><code class="language-rust">let nums = vec![1, 2, 3, 4, 5];
+
+// for 대신 이터레이터 체인
+let doubled: Vec&lt;i32&gt; = nums.iter()
+    .filter(|&&x| x > 2)  // 2보다 큰 것만
+    .map(|&x| x * 2)      // 2배
+    .collect();            // Vec으로 모음
+
+println!("{:?}", doubled);  // [6, 8, 10]</code></pre>` },
+      { type: "student", html: `<p>for 루프로 해도 되는데 왜 이렇게 써?</p>` },
+      { type: "teacher", html: `<p>두 가지 이유예요:</p>
+<ol><li><strong>의도가 명확</strong>: "필터하고 변환한다"가 코드에 바로 보임</li>
+<li><strong>성능이 같거나 더 좋음</strong>: Rust 이터레이터는 <strong>제로 코스트 추상화</strong>예요. 컴파일러가 for 루프와 같은 기계어로 만들어줘요.</li></ol>
+<p>자주 쓰는 메서드:</p>
+<table><tr><th>메서드</th><th>역할</th></tr>
+<tr><td><code>.iter()</code></td><td>읽기 이터레이터</td></tr>
+<tr><td><code>.map()</code></td><td>각 원소 변환</td></tr>
+<tr><td><code>.filter()</code></td><td>조건에 맞는 것만</td></tr>
+<tr><td><code>.collect()</code></td><td>결과를 컬렉션으로</td></tr>
+<tr><td><code>.sum()</code></td><td>합계</td></tr>
+<tr><td><code>.find()</code></td><td>첫 번째 매칭 → Option</td></tr></table>` },
+      { type: "keypoint", html: `<ul><li><code>.iter().map().filter().collect()</code> = 이터레이터 체인</li><li>제로 코스트 추상화 — for 루프와 성능 동일</li><li>의도가 코드에 드러남 (선언적 스타일)</li><li>처음엔 for 루프, 익숙해지면 이터레이터</li></ul>` },
+      { type: "match", config: {
+        title: "매칭 게임: 이터레이터 메서드",
+        pairs: [
+          { left: "각 원소를 변환", right: "map()" },
+          { left: "조건에 맞는 것만 걸러냄", right: "filter()" },
+          { left: "결과를 컬렉션으로 모음", right: "collect()" },
+          { left: "모든 원소의 합계", right: "sum()" }
+        ]
+      }}
+    ],
+    quiz: {
+      question: "Rust 이터레이터가 '제로 코스트 추상화'인 이유는?",
+      options: [ "런타임에 추가 객체를 생성해서", "컴파일러가 for 루프와 같은 기계어로 최적화해서", "가비지 컬렉터가 처리해서", "느리지만 가독성이 좋아서" ],
+      answer: 1,
+      explanation: "Rust 컴파일러가 이터레이터 체인을 for 루프와 동일한 기계어로 최적화해요. 추상화의 비용이 제로!"
+    }
+  },
+  {
+    title: "6. Ch08 총정리",
+    steps: [
+      { type: "teacher", html: `<p>총정리해볼게요:</p>
+<table><tr><th>개념</th><th>한 줄 요약</th></tr>
+<tr><td><code>Vec&lt;T&gt;</code></td><td>가변 길이 배열, <code>vec![]</code> 매크로로 생성</td></tr>
+<tr><td><code>for x in &vec</code></td><td>읽기 빌림 순회 (가장 많이 씀)</td></tr>
+<tr><td><code>String</code></td><td>소유 문자열 (UTF-8, 인덱싱 불가)</td></tr>
+<tr><td><code>&str</code></td><td>문자열 빌림 (참조)</td></tr>
+<tr><td><code>HashMap&lt;K, V&gt;</code></td><td>키-값 저장소, get()은 Option 반환</td></tr>
+<tr><td><code>entry().or_insert()</code></td><td>없으면 넣기 패턴</td></tr>
+<tr><td>이터레이터 체인</td><td><code>.iter().map().filter().collect()</code></td></tr></table>` },
+      { type: "flashcard", config: {
+        title: "최종 복습 플래시카드",
+        cards: [
+          { front: "<code>Vec&lt;T&gt;</code>와 배열의<br>차이는?", back: "배열: 고정 길이, 스택<br><code>Vec</code>: 가변 길이, 힙" },
+          { front: "Vec 순회 시<br>가장 많이 쓰는 방법은?", back: "<code>for x in &vec</code><br>읽기 빌림 — 소유권 유지" },
+          { front: "<code>String[0]</code>이<br>안 되는 이유는?", back: "UTF-8은 가변 길이 인코딩이라<br>O(1) 접근이 불가능. 성능 함정 방지." },
+          { front: "<code>entry().or_insert()</code>는<br>무엇을 하나?", back: "키가 없으면 기본값 삽입,<br>있으면 기존 값의 가변 참조 반환" },
+          { front: "이터레이터가 '제로 코스트'인<br>이유는?", back: "컴파일러가 for 루프와 같은<br>기계어로 최적화해주니까" }
+        ]
+      }},
+      { type: "keypoint", html: `<ul><li>Rust 설계 철학: 컬렉션에서도 소유권 규칙 일관 적용</li><li>null 대신 Option, 예외 대신 Result</li><li>이터레이터는 제로 코스트 추상화로 성능 손해 없이 표현력을 높임</li></ul>` }
+    ],
+    quiz: {
+      question: "Rust 컬렉션의 설계 원칙과 가장 맞는 것은?",
+      options: [ "가비지 컬렉터가 메모리를 관리한다", "소유권 규칙이 컬렉션에도 일관되게 적용된다", "모든 접근은 런타임에 검사된다", "null을 자유롭게 사용할 수 있다" ],
+      answer: 1,
+      explanation: "Vec, HashMap 등 모든 컬렉션에서 소유권/빌림 규칙이 동일하게 적용돼요."
+    }
+  }
+];
+
+const STORAGE_KEY = "ch08_progress";
+let state = loadState();
+function loadState(){try{const s=localStorage.getItem(STORAGE_KEY);if(s)return JSON.parse(s);}catch{}return{sectionIdx:0,stepIdx:-1,quizPassed:[]};}
+function saveState(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}catch{}}
+const chat=document.getElementById("chat"),btnPrev=document.getElementById("btnPrev"),btnNext=document.getElementById("btnNext"),progressFill=document.getElementById("progressFill"),progressLabel=document.getElementById("progressLabel"),stepIndicator=document.getElementById("stepIndicator"),mainArea=document.getElementById("mainArea");
+function renderBubble(step){const d=document.createElement("div");if(step.type==="teacher"||step.type==="student"){d.className=`bubble ${step.type}`;d.innerHTML=`<div class="role">${step.type==="teacher"?"선생님":"학생"}</div>${step.html}`;}else if(step.type==="keypoint"){d.className="keypoint";d.innerHTML=`<div class="keypoint-title">핵심 정리</div>${step.html}`;}return d;}
+function renderSectionDivider(t){const d=document.createElement("div");d.className="section-divider";d.innerHTML=`<span>${t}</span>`;return d;}
+function renderQuiz(q,si){const d=document.createElement("div");d.className="quiz-card";d.innerHTML=`<h3>퀴즈</h3><p style="margin-bottom:12px;">${q.question}</p>`+q.options.map((o,i)=>`<button class="quiz-option" data-idx="${i}">${o}</button>`).join("")+`<div class="quiz-feedback" id="qf-${si}"></div>`;return d;}
+function renderFlashcard(config){const d=document.createElement("div");d.className="flashcard-container";d.innerHTML=`<div style="font-size:0.85rem;font-weight:700;color:var(--primary);margin-bottom:10px;text-align:center;">${config.title}</div><div class="flashcard" id="fc-active"><div class="flashcard-face flashcard-front"><div class="flashcard-label">질문</div><div class="flashcard-content" id="fc-front-content"></div><div class="flashcard-hint">클릭해서 뒤집기</div></div><div class="flashcard-face flashcard-back"><div class="flashcard-label">정답</div><div class="flashcard-content" id="fc-back-content"></div><div class="flashcard-hint">클릭해서 돌아가기</div></div></div><div class="flashcard-nav"><button id="fc-prev-btn">이전</button><button id="fc-next-btn">다음</button></div><div class="flashcard-counter" id="fc-counter"></div>`;requestAnimationFrame(()=>{const cards=config.cards;let idx=0;const fc=d.querySelector("#fc-active"),frontC=d.querySelector("#fc-front-content"),backC=d.querySelector("#fc-back-content"),counter=d.querySelector("#fc-counter"),prevB=d.querySelector("#fc-prev-btn"),nextB=d.querySelector("#fc-next-btn");function show(){fc.classList.remove("flipped");frontC.innerHTML=cards[idx].front;backC.innerHTML=cards[idx].back;counter.textContent=`${idx+1} / ${cards.length}`;fc.style.minHeight=Math.max(Math.max(frontC.scrollHeight,backC.scrollHeight,100)+80,160)+"px";}fc.addEventListener("click",()=>fc.classList.toggle("flipped"));prevB.addEventListener("click",e=>{e.stopPropagation();if(idx>0){idx--;show();}});nextB.addEventListener("click",e=>{e.stopPropagation();if(idx<cards.length-1){idx++;show();}});show();});return d;}
+function renderMatch(config){const d=document.createElement("div");d.className="match-card";const shuffled=[...config.pairs.map(p=>p.right)].sort(()=>Math.random()-0.5);d.innerHTML=`<h3>${config.title}</h3><p style="font-size:0.83rem;margin-bottom:12px;">왼쪽을 선택한 뒤, 매칭되는 오른쪽을 클릭하세요.</p><div class="match-columns"><div class="match-col"><div class="match-col-label">항목</div>${config.pairs.map((p,i)=>`<div class="match-item match-left" data-idx="${i}">${p.left}</div>`).join("")}</div><div class="match-col"><div class="match-col-label">답</div>${shuffled.map(r=>`<div class="match-item match-right" data-val="${r}">${r}</div>`).join("")}</div></div><div class="match-feedback"></div>`;requestAnimationFrame(()=>{let sel=null,mc=0;const ls=d.querySelectorAll(".match-left"),rs=d.querySelectorAll(".match-right"),fb=d.querySelector(".match-feedback");ls.forEach(el=>{el.addEventListener("click",()=>{if(el.classList.contains("matched"))return;ls.forEach(l=>l.classList.remove("selected"));el.classList.add("selected");sel=el;});});rs.forEach(el=>{el.addEventListener("click",()=>{if(!sel||el.classList.contains("matched"))return;const li=parseInt(sel.dataset.idx);if(el.dataset.val===config.pairs[li].right){sel.classList.remove("selected");sel.classList.add("matched");el.classList.add("matched");mc++;sel=null;if(mc===config.pairs.length){fb.className="match-feedback show correct";fb.textContent="모두 맞았어요!";}}else{el.classList.add("wrong-flash");setTimeout(()=>el.classList.remove("wrong-flash"),400);}});});});return d;}
+function renderCompileCheck(config){const d=document.createElement("div");d.className="compile-check-card";d.innerHTML=`<h3>${config.title}</h3>`+config.items.map((item,i)=>{const ce=item.code.replace(/</g,'&lt;').replace(/>/g,'&gt;');return`<div class="cc-item" data-idx="${i}"><pre><code class="language-rust">${ce}</code></pre><div class="cc-buttons"><button class="cc-btn btn-ok" data-choice="ok">컴파일 OK</button><button class="cc-btn btn-err" data-choice="err">컴파일 에러</button></div><div class="cc-explain"></div></div>`;}).join("")+`<div class="cc-score"></div>`;requestAnimationFrame(()=>{let ans=0,cor=0;const tot=config.items.length,scoreEl=d.querySelector(".cc-score");config.items.forEach((item,i)=>{const ci=d.querySelectorAll(".cc-item")[i],btns=ci.querySelectorAll(".cc-btn"),exp=ci.querySelector(".cc-explain");btns.forEach(btn=>{btn.addEventListener("click",()=>{const ch=btn.dataset.choice,ok=(ch==="ok")===item.compiles;btns.forEach(b=>b.disabled=true);if(ok){btn.classList.add("chosen-correct");exp.className="cc-explain show correct";exp.textContent="정답! "+item.explain;cor++;}else{btn.classList.add("chosen-wrong");(item.compiles?ci.querySelector(".btn-ok"):ci.querySelector(".btn-err")).classList.add("chosen-correct");exp.className="cc-explain show wrong";exp.textContent="오답! "+item.explain;}ci.classList.add("resolved");ans++;if(ans===tot){scoreEl.className="cc-score show";scoreEl.textContent=`결과: ${tot}문제 중 ${cor}문제 정답!`+(cor===tot?" 완벽해요!":"");}});});});d.querySelectorAll("pre code.language-rust").forEach(el=>hljs.highlightElement(el));});return d;}
+function renderDragFill(config){const d=document.createElement("div");d.className="drag-fill-card";const am={};config.blanks.forEach(b=>{am[b.id]=b.answer;});let ch=config.template;config.blanks.forEach(b=>{ch=ch.replace(`__${b.id}__`,`<span class="drag-slot" data-id="${b.id}" data-filled=""></span>`);});d.innerHTML=`<h3>${config.title}</h3><p style="font-size:0.85rem;margin-bottom:10px;">${config.description}</p><div class="drag-candidates">${config.candidates.map((c,i)=>`<span class="drag-chip" draggable="true" data-val="${i}">${c}</span>`).join("")}</div><pre><code>${ch}</code></pre><button class="fill-check-btn">확인</button><div class="fill-feedback"></div>`;requestAnimationFrame(()=>{const chips=d.querySelectorAll(".drag-chip"),slots=d.querySelectorAll(".drag-slot"),checkBtn=d.querySelector(".fill-check-btn"),fb=d.querySelector(".fill-feedback");let dc=null;chips.forEach(chip=>{chip.addEventListener("dragstart",e=>{if(chip.classList.contains("used")){e.preventDefault();return;}dc=chip;chip.classList.add("dragging");e.dataTransfer.effectAllowed="move";});chip.addEventListener("dragend",()=>{chip.classList.remove("dragging");dc=null;});chip.addEventListener("click",()=>{if(chip.classList.contains("used"))return;chips.forEach(c=>c.classList.remove("dragging"));if(dc===chip){dc=null;return;}dc=chip;chip.classList.add("dragging");});});slots.forEach(slot=>{slot.addEventListener("dragover",e=>{e.preventDefault();slot.classList.add("dragover");});slot.addEventListener("dragleave",()=>slot.classList.remove("dragover"));slot.addEventListener("drop",e=>{e.preventDefault();slot.classList.remove("dragover");if(dc)placeChip(slot,dc);});slot.addEventListener("click",()=>{if(dc){placeChip(slot,dc);}else if(slot.dataset.filled!==""){const ci=slot.dataset.filled,chip=d.querySelector(`.drag-chip[data-val="${ci}"]`);if(chip)chip.classList.remove("used");slot.textContent="";slot.dataset.filled="";slot.classList.remove("filled","correct","wrong");}});});function placeChip(slot,chip){if(slot.dataset.filled!==""){const oi=slot.dataset.filled,oc=d.querySelector(`.drag-chip[data-val="${oi}"]`);if(oc)oc.classList.remove("used");}slot.textContent=chip.textContent;slot.dataset.filled=chip.dataset.val;slot.classList.add("filled");slot.classList.remove("correct","wrong");chip.classList.remove("dragging");chip.classList.add("used");dc=null;}checkBtn.addEventListener("click",()=>{let ac=true,af=true;slots.forEach(slot=>{const id=slot.dataset.id,ans=am[id],val=slot.textContent.trim();if(!val){af=false;ac=false;return;}if(val===ans){slot.classList.remove("wrong");slot.classList.add("correct");}else{slot.classList.remove("correct");slot.classList.add("wrong");ac=false;}});if(!af){fb.className="fill-feedback show wrong";fb.textContent="빈칸을 모두 채워주세요!";}else if(ac){fb.className="fill-feedback show correct";fb.textContent="정답! "+config.successMsg;checkBtn.disabled=true;}else{fb.className="fill-feedback show wrong";fb.textContent="틀린 칸이 있어요. 빈칸을 클릭해서 빼고 다시 넣어보세요!";}});});return d;}
+function renderStep(step){if(step.type==="flashcard")return renderFlashcard(step.config);if(step.type==="drag-fill")return renderDragFill(step.config);if(step.type==="match")return renderMatch(step.config);if(step.type==="compile-check")return renderCompileCheck(step.config);return renderBubble(step);}
+function renderCompletion(){const d=document.createElement("div");d.className="completion";d.innerHTML=`<h2>학습 완료!</h2><p>Ch08 컬렉션 튜토리얼을 모두 마쳤습니다.</p><table class="summary-table"><tr><th>개념</th><th>한 줄 요약</th></tr><tr><td>Vec&lt;T&gt;</td><td>가변 길이 배열, vec![] 매크로</td></tr><tr><td>for x in &vec</td><td>읽기 빌림 순회 (가장 많이 씀)</td></tr><tr><td>String</td><td>소유 문자열 (UTF-8, 인덱싱 불가)</td></tr><tr><td>HashMap</td><td>키-값 저장소, get()은 Option</td></tr><tr><td>entry().or_insert()</td><td>없으면 넣기 패턴</td></tr><tr><td>이터레이터</td><td>.iter().map().filter().collect()</td></tr></table><p style="margin-top:16px;font-size:0.9rem;">다음: <strong>Ch09 에러 처리</strong></p><button class="restart-btn" onclick="restart()">처음부터 다시</button>`;return d;}
+function makeInstant(el){el.style.animation="none";el.style.opacity="1";el.style.transform="none";}
+function isQuizStep(){return state.stepIdx>=SECTIONS[state.sectionIdx].steps.length;}
+function isCompleted(){return state.sectionIdx>=SECTIONS.length;}
+function quizLocked(){return isQuizStep()&&!state.quizPassed.includes(state.sectionIdx);}
+function rebuildChat(){chat.innerHTML="";for(let s=0;s<state.sectionIdx;s++){const sec=SECTIONS[s];const dv=renderSectionDivider(sec.title);makeInstant(dv);chat.appendChild(dv);sec.steps.forEach(step=>{const el=renderStep(step);makeInstant(el);chat.appendChild(el);});const note=document.createElement("div");note.className="keypoint";makeInstant(note);note.innerHTML=`<div class="keypoint-title">퀴즈 통과!</div><p>${sec.quiz.explanation}</p>`;chat.appendChild(note);}if(isCompleted()){chat.appendChild(renderCompletion());updateUI();scrollToBottom();return;}const sec=SECTIONS[state.sectionIdx];const dv=renderSectionDivider(sec.title);makeInstant(dv);chat.appendChild(dv);const sc=Math.min(state.stepIdx+1,sec.steps.length);for(let i=0;i<sc;i++){const el=renderStep(sec.steps[i]);if(i<sc-1)makeInstant(el);chat.appendChild(el);}if(isQuizStep()){const qEl=renderQuiz(sec.quiz,state.sectionIdx);chat.appendChild(qEl);if(state.quizPassed.includes(state.sectionIdx))markQuizPassed(qEl,sec.quiz);else bindQuiz(qEl,sec.quiz,state.sectionIdx);}chat.querySelectorAll("pre code.language-rust").forEach(el=>hljs.highlightElement(el));updateUI();scrollToBottom();}
+function bindQuiz(c,q,si){const bs=c.querySelectorAll(".quiz-option"),fb=c.querySelector(".quiz-feedback");bs.forEach(b=>{b.addEventListener("click",()=>{const idx=parseInt(b.dataset.idx);if(idx===q.answer){b.classList.add("correct");fb.className="quiz-feedback show correct";fb.innerHTML="정답! "+q.explanation;bs.forEach(x=>x.disabled=true);if(!state.quizPassed.includes(si)){state.quizPassed.push(si);saveState();}updateUI();}else{b.classList.add("wrong");b.disabled=true;fb.className="quiz-feedback show wrong";fb.textContent="틀렸어요. 다시 골라보세요!";}});});}
+function markQuizPassed(c,q){const bs=c.querySelectorAll(".quiz-option"),fb=c.querySelector(".quiz-feedback");bs.forEach(b=>{if(parseInt(b.dataset.idx)===q.answer)b.classList.add("correct");b.disabled=true;});fb.className="quiz-feedback show correct";fb.innerHTML="정답! "+q.explanation;}
+function next(){if(isCompleted()||quizLocked())return;const sec=SECTIONS[state.sectionIdx];if(state.stepIdx<sec.steps.length){state.stepIdx++;saveState();rebuildChat();}else if(state.quizPassed.includes(state.sectionIdx)){state.sectionIdx++;state.stepIdx=-1;saveState();if(isCompleted())rebuildChat();else next();}}
+function prev(){if(state.stepIdx>0){state.stepIdx--;saveState();rebuildChat();}else if(state.sectionIdx>0){state.sectionIdx--;state.stepIdx=SECTIONS[state.sectionIdx].steps.length;saveState();rebuildChat();}}
+function restart(){state={sectionIdx:0,stepIdx:-1,quizPassed:[]};saveState();next();}
+function updateUI(){const done=isCompleted(),total=SECTIONS.length;progressFill.style.width=(done?100:(state.sectionIdx/total)*100)+"%";progressLabel.textContent=done?"완료!":`${state.sectionIdx+1} / ${total}`;btnPrev.disabled=(state.sectionIdx===0&&state.stepIdx<=0);if(done){btnNext.disabled=true;stepIndicator.textContent="";}else if(quizLocked()){btnNext.disabled=true;stepIndicator.textContent="퀴즈를 풀어주세요";}else{btnNext.disabled=false;const t=SECTIONS[state.sectionIdx].steps.length+1;stepIndicator.textContent=`${Math.min(state.stepIdx+1,t)} / ${t}`;}}
+function scrollToBottom(){requestAnimationFrame(()=>{mainArea.scrollTop=mainArea.scrollHeight;});}
+btnNext.addEventListener("click",next);btnPrev.addEventListener("click",prev);
+document.getElementById("btnReset").addEventListener("click",()=>{if(confirm("진행 상태를 초기화하고 처음부터 시작할까요?"))restart();});
+document.addEventListener("keydown",e=>{const tag=document.activeElement?.tagName;if(tag==="INPUT"||tag==="BUTTON")return;if(e.key==="Enter"||e.key==="ArrowRight")next();if(e.key==="ArrowLeft")prev();});
+if(state.stepIdx===-1&&state.sectionIdx===0)next();else rebuildChat();
+</script>
+</body>
+</html>
